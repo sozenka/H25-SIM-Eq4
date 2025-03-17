@@ -8,6 +8,9 @@ const Composition = () => {
   const nombresKeys = [
     1, 5, 6, 12, 13, 17, 18, 24, 25, 29, 30, 36, 37, 41, 42, 48,
   ];
+  const nombresBlackKeys = [
+    2, 4, 7, 9, 11, 14, 16, 19, 21, 23, 26, 28, 31, 33, 35, 38, 40, 43, 45, 47,
+  ];
 
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
@@ -41,9 +44,13 @@ const Composition = () => {
                     <div
                       key={index}
                       className={`bg-gray-300 p-2 rounded ${
+                        nombresBlackKeys.includes(index + 1)
+                          ? "bg-gray-500"
+                          : "bg-gray-300"
+                      } ${
                         nombresKeys.includes(index + 1)
-                          ? "h-[36px]"
-                          : "h-[28.5px]"
+                          ? "h-[34px]"
+                          : "h-[29.5px]"
                       }`}
                     >
                       <p>Container {index + 1}</p>
