@@ -7,14 +7,26 @@ const Composition = () => {
 
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
+      {" "}
+      {/*Vertical stacking*/}
       <h2 className="text-3xl font-bold text-white mb-8">
         Studio de Composition
       </h2>
       <div className="space-x-8 flex">
+        {" "}
+        {/*Horizontal stacking*/}
         <Piano />
+        <div className="grid md:grid-cols-[4fr_1fr] gap-6">
+          <div className="w-full overflow-x-auto scroll-smooth whitespace-nowrap">
+            <div
+              className="bg-black/20 p-4 rounded-lg border border-purple-500/20 w-[200%] h-full"
+              // style={{ width: "5000px", height: "300px" }}
+            >
+              <h3 className="text-xl font-semibold text-white mb-4">Layers</h3>
+            </div>
+          </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
+          {/* <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
             <h3 className="text-xl font-semibold text-white mb-4">
               Instruments
             </h3>
@@ -42,7 +54,7 @@ const Composition = () => {
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
             <h3 className="text-xl font-semibold text-white mb-4">
