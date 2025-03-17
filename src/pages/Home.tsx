@@ -49,6 +49,7 @@ const Home = () => {
       <div className="text-center">
         <button className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-full text-lg transition-colors">
           Commencer une composition
+          
         </button>
       </div>
     </div>
