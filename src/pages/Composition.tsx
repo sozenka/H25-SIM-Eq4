@@ -15,16 +15,26 @@ const Composition = () => {
       <div className="space-x-8 flex">
         {" "}
         {/*Horizontal stacking*/}
-        <div className="h-[700px] overflow-y-auto scroll-smooth whitespace-nowrap">
-          <Piano />
-        </div>
+        {/* <div className="h-[700px] overflow-y-auto scroll-smooth whitespace-nowrap">
+          
+        </div> */}
         <div className="grid md:grid-cols-[4fr_1fr] gap-6">
-          <div className="w-full overflow-x-auto scroll-smooth whitespace-nowrap">
-            <div
-              className="bg-black/20 p-4 rounded-lg border border-purple-500/20 w-[200%] h-full"
-              // style={{ width: "5000px", height: "300px" }}
-            >
-              <h3 className="text-xl font-semibold text-white mb-4">Layers</h3>
+          <div className="h-[700px] w-full overflow-x-auto overflow-y-auto scroll-smooth whitespace-nowrap">
+            <div className="flex h-full">
+              {/*Piano container*/}
+              <div className="flex-shrink-0">
+                <Piano />
+              </div>
+
+              {/*Layers container*/}
+              <div
+                className="bg-black/20 p-4 rounded-lg border border-purple-500/20 flex-shrink-0"
+                style={{ width: "200%" }}
+              >
+                <h3 className="text-xl font-semibold text-white mb-4">
+                  Layers
+                </h3>
+              </div>
             </div>
           </div>
 
