@@ -4,6 +4,10 @@ import { useMusicStore } from "../store/musicStore";
 
 const Composition = () => {
   const { startRecording, stopRecording, recording } = useMusicStore();
+  {
+    /*a changer au besoin */
+  }
+  const PIANO_HEIGHT = 2250;
 
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
@@ -22,14 +26,14 @@ const Composition = () => {
           <div className="h-[700px] w-full overflow-x-auto overflow-y-auto scroll-smooth whitespace-nowrap">
             <div className="flex h-full">
               {/*Piano container*/}
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 min-h-[700px]">
                 <Piano />
               </div>
 
               {/*Layers container*/}
               <div
                 className="bg-black/20 p-4 rounded-lg border border-purple-500/20 flex-shrink-0"
-                style={{ width: "200%" }}
+                style={{ width: "200%", height: "PIANO_HEIGHTpx" }}
               >
                 <h3 className="text-xl font-semibold text-white mb-4">
                   Layers
