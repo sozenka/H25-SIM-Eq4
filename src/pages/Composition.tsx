@@ -15,7 +15,9 @@ const Composition = () => {
       <div className="space-x-8 flex">
         {" "}
         {/*Horizontal stacking*/}
-        <Piano />
+        <div className="h-[700px] overflow-y-auto scroll-smooth whitespace-nowrap">
+          <Piano />
+        </div>
         <div className="grid md:grid-cols-[4fr_1fr] gap-6">
           <div className="w-full overflow-x-auto scroll-smooth whitespace-nowrap">
             <div
