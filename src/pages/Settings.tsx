@@ -1,39 +1,31 @@
 import React from 'react'
 
-const Settings = () => {
-  return (
-    <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
-      <h2 className="text-3xl font-bold text-white mb-8">Paramètres</h2>
-      <div className="grid md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <h3 className="text-xl font-semibold text-white">Personnalisation</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-purple-200 mb-2"> Thème</label>
-              <div className="flex space-x-4">
-                <button className="flex-1 py-2 rounded-lg bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 transition-colors">
-                  Mode Clair
-                </button>
-                <button className="flex-1 py-2 rounded-lg bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 transition-colors">
-                  Mode Sombre
-                </button>
-              </div>
+const Settings = () => (
+    <div className="settings-container">
+      <h2 className="settings-title">Paramètres</h2>
+      <div className="settings-grid">
+        {/* Personalization Section */}
+        <section className="section">
+          <h3 className="section-title">Personnalisation</h3>
+          <div className="option-group">
+            <label className="option-label" htmlFor="theme">Thème</label>
+            <div className="button-group" id="theme">
+              <button className="theme-button">Mode Clair</button>
+              <button className="theme-button">Mode Sombre</button>
             </div>
           </div>
-        </div>
-
-        <div className="space-y-6">
-          <h3 className="text-xl font-semibold text-white">Configuration de l'intelligence artificielle</h3>
-          <div className="space-y-4">
-            <div>
-              <input type="checkbox" checked/>
-              <span className="slider round"></span>
-            </div>
+        </section>
+  
+        {/* AI Configuration Section */}
+        <section className="section">
+          <h3 className="section-title">Configuration de l'intelligence artificielle</h3>
+          <div className="option-group">
+            <label className="toggle-label" htmlFor="ai-toggle">Activer l'IA</label>
+            <input type="checkbox" id="ai-toggle" className="toggle-input" defaultChecked />
           </div>
-        </div>
+        </section>
       </div>
     </div>
   )
-}
-
-export default Settings
+  
+  export default Settings;
