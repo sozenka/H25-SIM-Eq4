@@ -84,7 +84,7 @@ const Piano: React.FC = () => {
             {/* White Key */}
             <button
               onClick={() => handleKeyClick(note)}
-              className="w-40 h-20 bg-white border border-gray-300 flex items-center justify-center text-gray-600"
+              className="w-40 h-[60px] bg-white border border-gray-300 flex items-center justify-center text-gray-600"
             >
               {note}
             </button>
@@ -93,10 +93,10 @@ const Piano: React.FC = () => {
             {isBlackKey && (
               <button
                 onClick={() => handleKeyClick(note + "#")}
-                className="absolute w-20 h-10 bg-black text-white"
+                className="absolute w-20 h-[40px] bg-black text-white"
                 style={{
-                  left: "50%", // Shift black key to the right side of the white key
-                  top: "58px", // Move black key slightly up
+                  left: "50%",
+                  top: "38px",
                   zIndex: 1,
                 }}
               >
