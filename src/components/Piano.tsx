@@ -1,7 +1,11 @@
 import React, { useEffect } from "react";
 import { useMusicStore } from "../store/musicStore";
 
-const Piano: React.FC = () => {
+interface PianoProps {
+  onKeyPress: (keyIndex: number) => void;
+}
+
+const Piano: React.FC<PianoProps> = ({ onKeyPress }) => {
   const { initializeInstrument, playNote, currentOctave, currentScale } =
     useMusicStore();
 
@@ -18,8 +22,9 @@ const Piano: React.FC = () => {
     return majorScales[currentScale]?.includes(note.replace("#", "")) ?? true;
   };
 
-  const handleKeyClick = (note: string) => {
+  const handleKeyClick = (note: string, index: number) => {
     playNote(`${note}${currentOctave}`);
+    onKeyPress(index + 1);
   };
 
   const whiteKeys = [
@@ -83,7 +88,7 @@ const Piano: React.FC = () => {
           <div key={index} className="relative">
             {/* White Key */}
             <button
-              onClick={() => handleKeyClick(note)}
+              onClick={() => handleKeyClick(note, index)}
               className="w-40 h-[60px] bg-white border border-gray-300 flex items-center justify-center text-gray-600"
             >
               {note}
@@ -92,7 +97,7 @@ const Piano: React.FC = () => {
             {/* Black Key (conditionally rendered) */}
             {isBlackKey && (
               <button
-                onClick={() => handleKeyClick(note + "#")}
+                onClick={() => handleKeyClick(note + "#", index)}
                 className="absolute w-20 h-[40px] bg-black text-white"
                 style={{
                   left: "50%",

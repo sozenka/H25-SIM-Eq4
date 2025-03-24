@@ -1,9 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import Piano from "../components/Piano";
 import { useMusicStore } from "../store/musicStore";
 
 const Composition = () => {
   const { startRecording, stopRecording, recording } = useMusicStore();
+
+  const [activeKeys, setActiveKeys] = useState<number[]>([]);
+
+  const handleKeyPress = (keyIndex: number) => {
+    setActiveKeys((prev) => [...new Set([...prev, keyIndex])]);
+    setTimeout(() => {
+      setActiveKeys((prev) => prev.filter((k) => k !== keyIndex));
+    }, 500);
+  };
+
   const PIANO_HEIGHT = 40; //a changer au besoin
   const nombresKeys = [
     1, 5, 6, 12, 13, 17, 18, 24, 25, 29, 30, 36, 37, 41, 42, 48,
@@ -30,7 +40,7 @@ const Composition = () => {
             <div className="flex h-full">
               {/*Piano container*/}
               <div className="flex-shrink-0 min-h-[700px]">
-                <Piano />
+                <Piano onKeyPress={handleKeyPress} />
               </div>
 
               {/*Layers container*/}
@@ -51,6 +61,8 @@ const Composition = () => {
                         nombresKeys.includes(index + 1)
                           ? "h-[34px]"
                           : "h-[29.5px]"
+                      } ${
+                        activeKeys.includes(index + 1) ? "bg-yellow-400" : ""
                       }`}
                     >
                       <p>Container {index + 1}</p>
