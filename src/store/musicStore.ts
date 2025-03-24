@@ -22,7 +22,17 @@ interface MusicState {
   addRecording: (recording: { name: string; notes: Array<{ note: string; time: number }> }) => void
 }
 
-const synth = new Tone.PolySynth().toDestination()
+const synth = new Tone.PolySynth(Tone.Synth, {
+  oscillator: {
+    type: 'sine'
+  },
+  envelope: {
+    attack: 0.05,
+    decay: 0.2,
+    sustain: 0.2,
+    release: 1
+  }
+}).toDestination()
 
 export const useMusicStore = create<MusicState>((set, get) => ({
   instrument: null,
@@ -33,6 +43,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   initializeInstrument: async () => {
     await Tone.start()
+    synth.volume.value = -10 // Slightly reduce volume
     set({ instrument: synth })
   },
 
@@ -41,9 +52,13 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     if (instrument) {
       instrument.triggerAttackRelease(note, '8n')
       if (recording) {
-        // Add note to current recording
         const time = Tone.now()
-        // Implementation for recording notes would go here
+        // Store note in recording buffer
+        const newRecording = {
+          note,
+          time
+        }
+        // Implementation for storing notes would go here
       }
     }
   },
@@ -58,10 +73,18 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   setScale: (scale: string) => {
     set({ currentScale: scale })
+    // Update all relevant components when scale changes
+    const { instrument } = get()
+    if (instrument) {
+      // Reset any ongoing notes
+      instrument.releaseAll()
+    }
   },
 
   setOctave: (octave: number) => {
-    set({ currentOctave: octave })
+    if (octave >= 0 && octave <= 8) {
+      set({ currentOctave: octave })
+    }
   },
 
   addRecording: (recording) => {
