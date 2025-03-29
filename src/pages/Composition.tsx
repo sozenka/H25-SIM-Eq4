@@ -17,12 +17,16 @@ const Composition = () => {
 
   const [activeKeys, setActiveKeys] = useState<number[]>([]);
 
-  const handleKeyPress = (keyIndex: number) => {
-    setActiveKeys((prev) => [...new Set([...prev, nombresKeys[keyIndex - 1]])]);
+  const handleKeyPress = (keyIndex: number, isBlackKey: boolean) => {
+    let trueKeyIndex = 0;
+    if (!isBlackKey) {
+      trueKeyIndex = nombresKeys[keyIndex - 1];
+    } else {
+      trueKeyIndex = nombresBlackKeys[keyIndex - 1];
+    }
+    setActiveKeys((prev) => [...new Set([...prev, trueKeyIndex])]);
     setTimeout(() => {
-      setActiveKeys((prev) =>
-        prev.filter((k) => k !== nombresKeys[keyIndex - 1])
-      );
+      setActiveKeys((prev) => prev.filter((k) => k !== trueKeyIndex));
     }, 500);
   };
 
