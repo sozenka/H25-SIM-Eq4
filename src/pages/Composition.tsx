@@ -3,24 +3,28 @@ import Piano from "../components/Piano";
 import { useMusicStore } from "../store/musicStore";
 
 const Composition = () => {
+  const PIANO_HEIGHT = 40; //a changer au besoin
+  const nombresKeys = [
+    1, 3, 5, 6, 8, 10, 12, 13, 15, 17, 18, 20, 22, 24, 25, 27, 29, 30, 32, 34,
+    36, 37, 39, 41, 42, 44, 46, 48,
+  ];
+  const nombreKeys2 = [3, 8, 10, 15, 20, 22, 27, 32, 34, 39, 44, 46];
+  const nombresBlackKeys = [
+    2, 4, 7, 9, 11, 14, 16, 19, 21, 23, 26, 28, 31, 33, 35, 38, 40, 43, 45, 47,
+  ];
+
   const { startRecording, stopRecording, recording } = useMusicStore();
 
   const [activeKeys, setActiveKeys] = useState<number[]>([]);
 
   const handleKeyPress = (keyIndex: number) => {
-    setActiveKeys((prev) => [...new Set([...prev, keyIndex])]);
+    setActiveKeys((prev) => [...new Set([...prev, nombresKeys[keyIndex - 1]])]);
     setTimeout(() => {
-      setActiveKeys((prev) => prev.filter((k) => k !== keyIndex));
+      setActiveKeys((prev) =>
+        prev.filter((k) => k !== nombresKeys[keyIndex - 1])
+      );
     }, 500);
   };
-
-  const PIANO_HEIGHT = 40; //a changer au besoin
-  const nombresKeys = [
-    1, 5, 6, 12, 13, 17, 18, 24, 25, 29, 30, 36, 37, 41, 42, 48,
-  ];
-  const nombresBlackKeys = [
-    2, 4, 7, 9, 11, 14, 16, 19, 21, 23, 26, 28, 31, 33, 35, 38, 40, 43, 45, 47,
-  ];
 
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
@@ -58,7 +62,8 @@ const Composition = () => {
                           ? "bg-gray-500"
                           : "bg-gray-300"
                       } ${
-                        nombresKeys.includes(index + 1)
+                        nombresKeys.includes(index + 1) &&
+                        !nombreKeys2.includes(index + 1)
                           ? "h-[34px]"
                           : "h-[29.5px]"
                       } ${
