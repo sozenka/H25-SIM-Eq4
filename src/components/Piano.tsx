@@ -84,6 +84,7 @@ const Piano: React.FC<PianoProps> = ({ onKeyPress }) => {
     <div className="relative flex flex-col items-center py-4 space-y-0">
       {whiteKeys.map((note, index) => {
         const isBlackKey = blackKeys.includes(note + "#");
+
         return (
           <div key={index} className="relative">
             {/* White Key */}
