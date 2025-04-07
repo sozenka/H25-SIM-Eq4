@@ -1,5 +1,5 @@
 import React from 'react'
-import { Music, Brain, AudioWaveform as Waveform } from 'lucide-react'
+import {Music, Brain, AudioWaveform as Waveform } from 'lucide-react'
 
 const Home = () => {
   return (

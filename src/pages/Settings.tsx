@@ -2,6 +2,9 @@
 import { useState } from "react";
 
 const Settings = () => {
+  const currentUsername = "Jeremy Chheang"; 
+  const currentPassword = "2243711";
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -17,10 +20,17 @@ const Settings = () => {
 
   return (
     <div className="settings-container">
+
+        {/* 👤 Current Username Display */}
+        <div className="mb-6 text-2xl font-semibold text-gray-700">
+         <span className="text-white">{currentUsername}</span>
+      </div>
+
       <h2 className="settings-title">Paramètres du compte</h2>
+
       <div className="settings-grid">
         <section className="section">
-          <h3 className="bg-white hover: bg-gray-300 text black font-bold ">Nom d'utilisateur</h3>
+          <h3 className="section-title">Nom d'utilisateur</h3>
           <input
             type="text"
             className="input-field"
@@ -48,7 +58,7 @@ const Settings = () => {
           />
         </section>
 
-        <button className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-full text-lg transition-colors" onClick={handleSave}>
+        <button className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full text-lg transition-colors" onClick={handleSave}>
           Enregistrer
         </button>
       </div>
