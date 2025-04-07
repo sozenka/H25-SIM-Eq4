@@ -16,7 +16,7 @@ function App() {
     { id: 'composition', label: 'Composition', icon: Music },
     { id: 'ai', label: 'Suggestions IA', icon: Brain },
     { id: 'analysis', label: 'Analyse Sonore', icon: Waveform },
-    { id: 'settings', label: 'Compte', icon: SettingsIcon },
+    { id: 'settings', label: "Votre compte", icon: SettingsIcon },
   ]
 
   const renderPage = () => {
