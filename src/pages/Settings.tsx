@@ -1,70 +1,69 @@
-import React from 'react'
+
+import { useState } from "react";
 
 const Settings = () => {
+  const currentUsername = "Jeremy Chheang"; 
+  const currentPassword = "2243711";
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleSave = () => {
+    if (password !== confirmPassword) {
+      alert("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    // Handle save logic here (e.g., send to API)
+    alert("Paramètres enregistrés !");
+  };
+
   return (
-    <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
-      <h2 className="text-3xl font-bold text-white mb-8">Paramètres</h2>
+    <div className="settings-container">
 
-      <div className="grid md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <h3 className="text-xl font-semibold text-white">Personnalisation</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-purple-200 mb-2">Gamme par défaut</label>
-              <select className="w-full bg-black/20 border border-purple-500/20 rounded-lg p-2 text-purple-200">
-                <option>C Majeur</option>
-                <option>A Mineur</option>
-                <option>G Majeur</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-purple-200 mb-2">Thème</label>
-              <div className="flex space-x-4">
-                <button className="flex-1 py-2 rounded-lg bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 transition-colors">
-                  Mode Clair
-                </button>
-                <button className="flex-1 py-2 rounded-lg bg-purple-500 text-white">
-                  Mode Sombre
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* 👤 Current Username Display */}
+        <div className="mb-6 text-2xl font-semibold text-gray-700">
+         <span className="text-white">{currentUsername}</span>
+      </div>
 
-        <div className="space-y-6">
-          <h3 className="text-xl font-semibold text-white">Configuration IA</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-purple-200 mb-2">Niveau d'assistance</label>
-              <select className="w-full bg-black/20 border border-purple-500/20 rounded-lg p-2 text-purple-200">
-                <option>Débutant</option>
-                <option>Intermédiaire</option>
-                <option>Expert</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-purple-200 mb-2">Latence Audio</label>
-              <input
-                type="range"
-                className="w-full"
-                min="0"
-                max="100"
-                defaultValue="50"
-              />
-            </div>
-            <div>
-              <label className="block text-purple-200 mb-2">Qualité Audio</label>
-              <select className="w-full bg-black/20 border border-purple-500/20 rounded-lg p-2 text-purple-200">
-                <option>Haute (48kHz)</option>
-                <option>Moyenne (44.1kHz)</option>
-                <option>Basse (22kHz)</option>
-              </select>
-            </div>
-          </div>
-        </div>
+      <h2 className="settings-title">Paramètres du compte</h2>
+
+      <div className="settings-grid">
+        <section className="section">
+          <h3 className="section-title">Nom d'utilisateur</h3>
+          <input
+            type="text"
+            className="input-field"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Nouveau nom d'utilisateur"
+          />
+        </section>
+
+        <section className="section">
+          <h3 className="section-title">Changer le mot de passe</h3>
+          <input
+            type="password"
+            className="input-field"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Nouveau mot de passe"
+          />
+          <input
+            type="password"
+            className="input-field"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirmer le mot de passe"
+          />
+        </section>
+
+        <button className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full text-lg transition-colors" onClick={handleSave}>
+          Enregistrer
+        </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Settings
+export default Settings;

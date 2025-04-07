@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { Music } from 'lucide-react'
 import React from 'react'
+import Logo from '/src/Logo.png'
 
 interface NavItem {
   id: string
@@ -20,7 +21,8 @@ const Navigation: React.FC<NavigationProps> = ({ items, currentPage, onNavigate 
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-2">
-            <Music className="w-8 h-8 text-purple-400" />
+          
+            <img src={Logo} alt="HarmonIA Logo" className="w-12 h-12 object-contain" />
             <span className="text-xl font-bold text-white">HarmonIA</span>
           </div>
           <div className="hidden md:block">
