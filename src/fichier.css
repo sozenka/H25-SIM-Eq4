@@ -1,4 +1,5 @@
-/*the background*/
+/* the background
+il faudrait séparer le html du css */
 .settings-container { 
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
