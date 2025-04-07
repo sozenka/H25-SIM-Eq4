@@ -14,14 +14,13 @@ const Settings = () => {
       alert("Les mots de passe ne correspondent pas.");
       return;
     }
-    // Handle save logic here (e.g., send to API)
+  
     alert("Paramètres enregistrés !");
   };
 
   return (
     <div className="settings-container">
 
-        {/* 👤 Current Username Display */}
         <div className="mb-6 text-2xl font-semibold text-gray-700">
          <span className="text-white">{currentUsername}</span>
       </div>
