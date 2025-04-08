@@ -20,9 +20,10 @@ const Settings = () => {
 
   return (
     <div className="settings-container">
+        <div className="mb-6 text-2xl font-semibold text-white">
+          Compte de  
+         <span className="text-white">{" " + currentUsername}</span>
 
-        <div className="mb-6 text-2xl font-semibold text-gray-700">
-         <span className="text-white">{currentUsername}</span>
       </div>
 
       <h2 className="settings-title">Paramètres du compte</h2>
