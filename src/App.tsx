@@ -6,17 +6,18 @@ import Composition from './pages/Composition'
 import AiSuggestions from './pages/AiSuggestions'
 import SoundAnalysis from './pages/SoundAnalysis'
 import Settings from './pages/Settings'
+import Login from './pages/Login'
 
-type Page = 'home' | 'composition' | 'ai' | 'analysis' | 'recordings' | 'settings'
+type Page = 'home' | 'composition' | 'ai' | 'analysis' | 'recordings' | 'settings' | 'login'
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('home')
+  const [currentPage, setCurrentPage] = useState<Page>('login')
   const navItems = [
     { id: 'home', label: 'Accueil', icon: HomeIcon },
     { id: 'composition', label: 'Composition', icon: Music },
     { id: 'ai', label: 'Suggestions IA', icon: Brain },
     { id: 'analysis', label: 'Analyse Sonore', icon: Waveform },
-    { id: 'settings', label: 'Compte', icon: SettingsIcon },
+    { id: 'settings', label: 'Utilisateur', icon: SettingsIcon },
   ]
 
   const renderPage = () => {
@@ -31,6 +32,8 @@ function App() {
         return <SoundAnalysis />
       case 'settings':
         return <Settings />
+      case 'login':
+        return <Login/>
       default:
         return <Home />
     }
@@ -38,7 +41,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
-      <Navigation items={navItems} currentPage={currentPage} onNavigate={setCurrentPage} />
+      {currentPage !== 'login' && (
+        <Navigation items={navItems} currentPage={currentPage} onNavigate={setCurrentPage} />
+      )}
       <main className="container mx-auto px-4 py-8">
         {renderPage()}
       </main>
