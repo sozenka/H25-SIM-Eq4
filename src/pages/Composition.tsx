@@ -15,7 +15,20 @@ const Composition = () => {
 
   const { startRecording, stopRecording, recording } = useMusicStore();
 
-  const [activeKeys, setActiveKeys] = useState<number[]>([]);
+  const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
+
+  const changerEtatNote = (row: number, col: number) => {
+    const carre = `${row}:${col}`;
+    setActiveNotes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(carre)) {
+        newSet.delete(carre);
+      } else {
+        newSet.add(carre);
+      }
+      return newSet;
+    });
+  };
 
   const handleKeyPress = (keyIndex: number, isBlackKey: boolean) => {
     let trueKeyIndex = 0;
@@ -24,10 +37,10 @@ const Composition = () => {
     } else {
       trueKeyIndex = nombresBlackKeys[keyIndex - 1];
     }
-    setActiveKeys((prev) => [...new Set([...prev, trueKeyIndex])]);
-    setTimeout(() => {
-      setActiveKeys((prev) => prev.filter((k) => k !== trueKeyIndex));
-    }, 500);
+    // setActiveKeys((prev) => [...new Set([...prev, trueKeyIndex])]);
+    // setTimeout(() => {
+    //   setActiveKeys((prev) => prev.filter((k) => k !== trueKeyIndex));
+    // }, 500);
   };
 
   return (
@@ -66,40 +79,26 @@ const Composition = () => {
                 >
                   {Array.from({ length: 48 * 100 }).map((_, index) => {
                     const row = Math.floor(index / 100); //pour verifier la rangee du carre
+                    const col = index % 100;
+                    const carre = `${row}:${col}`;
                     const isDarkRow = nombresBlackKeys.includes(row + 1);
+                    const isActive = activeNotes.has(carre);
 
                     return (
                       <div
                         key={index}
-                        className={`border border-gray-300 ${
-                          isDarkRow ? "bg-purple-700" : "bg-purple-500"
-                        } hover:bg-purple-600 cursor-pointer`}
+                        onClick={() => changerEtatNote(row, col)}
+                        className={`border border-gray-300 cursor-pointer ${
+                          isActive
+                            ? "bg-blue-500 hover:bg-blue-600"
+                            : isDarkRow
+                            ? "bg-purple-700 hover:bg-purple-600"
+                            : "bg-purple-500 hover:bg-purple-600"
+                        }`}
                       />
                     );
                   })}
                 </div>
-
-                {/* <div className="grid gap-1">
-                  {Array.from({ length: 48 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className={`bg-gray-300 p-2 rounded ${
-                        nombresBlackKeys.includes(index + 1)
-                          ? "bg-gray-500"
-                          : "bg-gray-300"
-                      } ${
-                        nombresKeys.includes(index + 1) &&
-                        !nombreKeys2.includes(index + 1)
-                          ? "h-[34px]"
-                          : "h-[29.5px]"
-                      } ${
-                        activeKeys.includes(index + 1) ? "bg-yellow-400" : ""
-                      }`}
-                    >
-                      <p>Container {index + 1}</p>
-                    </div>
-                  ))}
-                </div> */}
               </div>
             </div>
           </div>
