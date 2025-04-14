@@ -57,7 +57,22 @@ const Composition = () => {
                 style={{ width: "200%", height: "1700px" }}
               >
                 {/*Grid with 48 rows for the keys*/}
-                <div className="grid gap-1">
+                <div
+                  className="grid"
+                  style={{
+                    gridTemplateColumns: "repeat(100, 35px)",
+                    gridTemplateRows: "repeat(48, 35px)",
+                  }}
+                >
+                  {Array.from({ length: 48 * 100 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="border border-gray-300 bg-purple-500 hover:bg-purple-600 cursor-pointer"
+                    />
+                  ))}
+                </div>
+
+                {/* <div className="grid gap-1">
                   {Array.from({ length: 48 }).map((_, index) => (
                     <div
                       key={index}
@@ -77,7 +92,7 @@ const Composition = () => {
                       <p>Container {index + 1}</p>
                     </div>
                   ))}
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
