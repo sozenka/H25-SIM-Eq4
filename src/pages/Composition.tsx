@@ -64,12 +64,19 @@ const Composition = () => {
                     gridTemplateRows: "repeat(48, 35px)",
                   }}
                 >
-                  {Array.from({ length: 48 * 100 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className="border border-gray-300 bg-purple-500 hover:bg-purple-600 cursor-pointer"
-                    />
-                  ))}
+                  {Array.from({ length: 48 * 100 }).map((_, index) => {
+                    const row = Math.floor(index / 100); //pour verifier la rangee du carre
+                    const isDarkRow = nombresBlackKeys.includes(row + 1);
+
+                    return (
+                      <div
+                        key={index}
+                        className={`border border-gray-300 ${
+                          isDarkRow ? "bg-purple-700" : "bg-purple-500"
+                        } hover:bg-purple-600 cursor-pointer`}
+                      />
+                    );
+                  })}
                 </div>
 
                 {/* <div className="grid gap-1">
