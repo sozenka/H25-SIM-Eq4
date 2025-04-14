@@ -11,10 +11,10 @@ const Login = () => {
     e.preventDefault()
     
     if (username === validEmail && password === validPassword) {
-        setCurrentPage('home')  // Navigate to home page if login is successful
-        setError('')  // Clear error message
+        setCurrentPage('home')
+        setError('') 
       } else {
-        setError('Identifiants incorrects, veuillez réessayer.')  // Set error message if login fails
+        setError('Identifiants incorrects, veuillez réessayer.')
       }
     
     console.log('Logging in with:', username, password)
