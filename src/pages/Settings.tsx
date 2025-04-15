@@ -1,66 +1,89 @@
-
+// Settings.tsx
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Pencil, X } from "lucide-react";
 
 const Settings = () => {
-  const currentUsername = "Jeremy Chheang"; 
-  const currentPassword = "2243711";
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [modalType, setModalType] = useState<"email" | "username" | "password" | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const handleSave = () => {
-    if (password !== confirmPassword) {
-      alert("Les mots de passe ne correspondent pas.");
-      return;
-    }
-  
-    alert("Paramètres enregistrés !");
+  const openModal = (type: "email" | "username" | "password") => {
+    setModalType(type);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setTimeout(() => setModalType(null), 300);
   };
 
   return (
-    <div className="settings-container">
+    <div className="max-w-xl mx-auto mt-10 px-4 text-white">
+      <h1 className="text-3xl font-bold mb-6 text-center">Account Settings</h1>
 
-        <div className="mb-6 text-2xl font-semibold text-gray-700">
-         <span className="text-white">{currentUsername}</span>
+      <div className="space-y-6">
+        {[
+          { label: "Username", value: currentUser.username, type: "username" },
+          { label: "Email", value: currentUser.email, type: "email" },
+          { label: "Password", value: "••••••••", type: "password" },
+        ].map(({ label, value, type }) => (
+          <div key={type} className="bg-white/5 p-4 rounded-2xl flex justify-between items-center border border-white/10">
+            <div>
+              <h3 className="text-sm text-gray-400">{label}</h3>
+              <p className="text-lg font-medium">{value}</p>
+            </div>
+            <button onClick={() => openModal(type as any)} className="text-sm hover:text-purple-400 transition">
+              <Pencil className="w-5 h-5" />
+            </button>
+          </div>
+        ))}
       </div>
 
-      <h2 className="settings-title">Paramètres du compte</h2>
+      <AnimatePresence>
+        {modalOpen && modalType && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex justify-center items-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-zinc-900 border border-white/10 p-6 rounded-2xl w-full max-w-md relative"
+            >
+              <button onClick={closeModal} className="absolute top-3 right-3 text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
 
-      <div className="settings-grid">
-        <section className="section">
-          <h3 className="section-title">Nom d'utilisateur</h3>
-          <input
-            type="text"
-            className="input-field"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Nouveau nom d'utilisateur"
-          />
-        </section>
-
-        <section className="section">
-          <h3 className="section-title">Changer le mot de passe</h3>
-          <input
-            type="password"
-            className="input-field"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Nouveau mot de passe"
-          />
-          <input
-            type="password"
-            className="input-field"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Confirmer le mot de passe"
-          />
-        </section>
-
-        <button className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full text-lg transition-colors" onClick={handleSave}>
-          Enregistrer
-        </button>
-      </div>
+              <h2 className="text-xl font-semibold mb-4">Change {modalType}</h2>
+              <form className="space-y-4">
+                <input
+                  type={modalType === "password" ? "password" : "text"}
+                  placeholder={`New ${modalType}`}
+                  className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-white/10 focus:outline-none focus:ring focus:ring-purple-500"
+                />
+                {modalType === "password" && (
+                  <input
+                    type="password"
+                    placeholder="Confirm password"
+                    className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-white/10"
+                  />
+                )}
+                <button
+                  type="submit"
+                  className="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded-lg font-semibold transition"
+                >
+                  Update {modalType}
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
