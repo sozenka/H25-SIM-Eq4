@@ -43,6 +43,22 @@ const Composition = () => {
     // }, 500);
   };
 
+  const [playing, setPlaying] = useState(false);
+  const [colonneActuelle, setColonneActuelle] = useState<number | null>(null);
+
+  const playPianoRoll = () => {
+    let col = 0;
+    const interval = setInterval(() => {
+      setColonneActuelle(col);
+      col++;
+
+      if (col >= 100) {
+        clearInterval(interval);
+        setColonneActuelle(null); //pour faire le reset
+      }
+    }, 200); //le tempo du piano roll
+  };
+
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
       {" "}
@@ -84,17 +100,22 @@ const Composition = () => {
                     const isDarkRow = nombresBlackKeys.includes(row + 1);
                     const isActive = activeNotes.has(carre);
 
+                    const isColonneAct = col == colonneActuelle;
+
                     return (
                       <div
                         key={index}
                         onClick={() => changerEtatNote(row, col)}
-                        className={`border border-gray-300 cursor-pointer ${
-                          isActive
-                            ? "bg-blue-500 hover:bg-blue-600"
-                            : isDarkRow
-                            ? "bg-purple-700 hover:bg-purple-600"
-                            : "bg-purple-500 hover:bg-purple-600"
-                        }`}
+                        className={`border border-gray-300 cursor-pointer transition-colors duration-75
+                          ${
+                            isColonneAct
+                              ? "bg-pink-400 animate-pulse"
+                              : isActive
+                              ? "bg-blue-500 hover:bg-blue-600"
+                              : isDarkRow
+                              ? "bg-purple-700 hover:bg-purple-600"
+                              : "bg-purple-500 hover:bg-purple-600"
+                          }`}
                       />
                     );
                   })}
@@ -139,16 +160,21 @@ const Composition = () => {
             </h3>
             <div className="space-y-4">
               <button
-                onClick={recording ? stopRecording : startRecording}
+                onClick={
+                  playing
+                    ? () => {
+                        setPlaying(false);
+                        setColonneActuelle(null);
+                      }
+                    : playPianoRoll
+                }
                 className={`w-full py-2 rounded ${
-                  recording
+                  playing
                     ? "bg-red-600 hover:bg-red-700"
                     : "bg-red-500 hover:bg-red-600"
                 } text-white transition-colors`}
               >
-                {recording
-                  ? "Arrêter l'enregistrement"
-                  : "Démarrer l'enregistrement"}
+                {playing ? "Arrêter la lecture" : "Démarrer la lecture"}
               </button>
               <button
                 className="w-full py-2 rounded bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 transition-colors"
