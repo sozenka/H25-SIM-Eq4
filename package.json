@@ -1,5 +1,5 @@
 {
-  "name": "HarmonIA",
+  "name": "harmonia",
   "private": true,
   "version": "0.0.0",
   "scripts": {
@@ -25,6 +25,7 @@
     "remark-gfm": "^4.0.0",
     "tailwindcss-animate": "^1.0.7",
     "tone": "^14.7.77",
+    "wavesurfer.js": "^7.9.4",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

@@ -110,46 +110,45 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   stopRecording: async () => {
     const { recordingNotes, user, recordingAudioData } = get();
     if (!user) return;
-
+  
     mediaRecorder.stop();
     const duration = ((Date.now() - (get().currentRecordingStartTime || 0)) / 1000).toFixed(2);
     const name = `Recording ${new Date().toLocaleString()}`;
-
-    try {
-      const newRecording: Recording = {
-        id: crypto.randomUUID(),
-        userId: user.id,
-        name,
-        notes: recordingNotes,
-        duration: `${duration} seconds`,
-        createdAt: new Date().toISOString(),
-        audioData: recordingAudioData || undefined
-      };
-
-      localRecordings.push(newRecording);
-
-      // Analyze the audio
-      if (recordingAudioData) {
-        const analysis = await get().analyzeAudio(recordingAudioData);
-        set({ currentScale: analysis.scale });
-      }
-
-      set(state => ({
-        recording: false,
-        currentRecordingStartTime: null,
-        recordingAudioData: null,
-        recordings: [...state.recordings, newRecording]
-      }));
-    } catch (error) {
-      console.error('Error saving recording:', error);
-      set({
-        recording: false,
-        currentRecordingStartTime: null,
-        recordingAudioData: null
-      });
+  
+    const newRecording: Recording = {
+      id: crypto.randomUUID(),
+      userId: user.id,
+      name,
+      notes: recordingNotes,
+      duration: `${duration} seconds`,
+      createdAt: new Date().toISOString(),
+      audioData: recordingAudioData || undefined
+    };
+  
+    localRecordings.push(newRecording);
+  
+    // Analyze the audio (optional)
+    if (recordingAudioData) {
+      const analysis = await get().analyzeAudio(recordingAudioData);
+      set({ currentScale: analysis.scale });
     }
-  },
+  
+    set(state => ({
+      recording: false,
+      currentRecordingStartTime: null,
+      recordingAudioData: null,
+      recordings: [...state.recordings, newRecording]
+    }));
+  
+    return newRecording;
+  },  
 
+  addRecording: (recording: Recording) => {
+    set(state => ({
+      recordings: [...state.recordings, recording]
+    }));
+  },
+  
   setScale: (scale: string) => {
     set({ currentScale: scale });
     const { instrument } = get();
