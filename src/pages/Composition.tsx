@@ -15,7 +15,20 @@ const Composition = () => {
 
   const { startRecording, stopRecording, recording } = useMusicStore();
 
-  const [activeKeys, setActiveKeys] = useState<number[]>([]);
+  const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
+
+  const changerEtatNote = (row: number, col: number) => {
+    const carre = `${row}:${col}`;
+    setActiveNotes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(carre)) {
+        newSet.delete(carre);
+      } else {
+        newSet.add(carre);
+      }
+      return newSet;
+    });
+  };
 
   const handleKeyPress = (keyIndex: number, isBlackKey: boolean) => {
     let trueKeyIndex = 0;
@@ -24,10 +37,26 @@ const Composition = () => {
     } else {
       trueKeyIndex = nombresBlackKeys[keyIndex - 1];
     }
-    setActiveKeys((prev) => [...new Set([...prev, trueKeyIndex])]);
-    setTimeout(() => {
-      setActiveKeys((prev) => prev.filter((k) => k !== trueKeyIndex));
-    }, 500);
+    // setActiveKeys((prev) => [...new Set([...prev, trueKeyIndex])]);
+    // setTimeout(() => {
+    //   setActiveKeys((prev) => prev.filter((k) => k !== trueKeyIndex));
+    // }, 500);
+  };
+
+  const [playing, setPlaying] = useState(false);
+  const [colonneActuelle, setColonneActuelle] = useState<number | null>(null);
+
+  const playPianoRoll = () => {
+    let col = 0;
+    const interval = setInterval(() => {
+      setColonneActuelle(col);
+      col++;
+
+      if (col >= 100) {
+        clearInterval(interval);
+        setColonneActuelle(null); //pour faire le reset
+      }
+    }, 200); //le tempo du piano roll
   };
 
   return (
@@ -57,26 +86,39 @@ const Composition = () => {
                 style={{ width: "200%", height: "1700px" }}
               >
                 {/*Grid with 48 rows for the keys*/}
-                <div className="grid gap-1">
-                  {Array.from({ length: 48 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className={`bg-gray-300 p-2 rounded ${
-                        nombresBlackKeys.includes(index + 1)
-                          ? "bg-gray-500"
-                          : "bg-gray-300"
-                      } ${
-                        nombresKeys.includes(index + 1) &&
-                        !nombreKeys2.includes(index + 1)
-                          ? "h-[34px]"
-                          : "h-[29.5px]"
-                      } ${
-                        activeKeys.includes(index + 1) ? "bg-yellow-400" : ""
-                      }`}
-                    >
-                      <p>Container {index + 1}</p>
-                    </div>
-                  ))}
+                <div
+                  className="grid"
+                  style={{
+                    gridTemplateColumns: "repeat(100, 35px)",
+                    gridTemplateRows: "repeat(48, 35px)",
+                  }}
+                >
+                  {Array.from({ length: 48 * 100 }).map((_, index) => {
+                    const row = Math.floor(index / 100); //pour verifier la rangee du carre
+                    const col = index % 100;
+                    const carre = `${row}:${col}`;
+                    const isDarkRow = nombresBlackKeys.includes(row + 1);
+                    const isActive = activeNotes.has(carre);
+
+                    const isColonneAct = col == colonneActuelle;
+
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => changerEtatNote(row, col)}
+                        className={`border border-gray-300 cursor-pointer transition-colors duration-75
+                          ${
+                            isColonneAct
+                              ? "bg-pink-400 animate-pulse"
+                              : isActive
+                              ? "bg-blue-500 hover:bg-blue-600"
+                              : isDarkRow
+                              ? "bg-purple-700 hover:bg-purple-600"
+                              : "bg-purple-500 hover:bg-purple-600"
+                          }`}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -118,16 +160,21 @@ const Composition = () => {
             </h3>
             <div className="space-y-4">
               <button
-                onClick={recording ? stopRecording : startRecording}
+                onClick={
+                  playing
+                    ? () => {
+                        setPlaying(false);
+                        setColonneActuelle(null);
+                      }
+                    : playPianoRoll
+                }
                 className={`w-full py-2 rounded ${
-                  recording
+                  playing
                     ? "bg-red-600 hover:bg-red-700"
                     : "bg-red-500 hover:bg-red-600"
                 } text-white transition-colors`}
               >
-                {recording
-                  ? "Arrêter l'enregistrement"
-                  : "Démarrer l'enregistrement"}
+                {playing ? "Arrêter la lecture" : "Démarrer la lecture"}
               </button>
               <button
                 className="w-full py-2 rounded bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 transition-colors"
