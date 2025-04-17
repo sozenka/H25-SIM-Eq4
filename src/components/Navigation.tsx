@@ -2,6 +2,7 @@ import React from 'react'
 import { Music, LogIn, LogOut } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
+import Logo from '/src/Logo.png'
 
 interface NavItem {
   id: string
@@ -19,9 +20,9 @@ interface NavigationProps {
   onLogout: () => void
 }
 
-const Navigation: React.FC<NavigationProps> = ({ 
-  items, 
-  currentPage, 
+const Navigation: React.FC<NavigationProps> = ({
+  items,
+  currentPage,
   onNavigate,
   user,
   onLogin,
@@ -32,10 +33,10 @@ const Navigation: React.FC<NavigationProps> = ({
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-2">
-            <Music className="w-8 h-8 text-purple-400" />
-            <span className="text-xl font-bold text-white">MusicAI Studio</span>
+            <img src={Logo} alt="HarmonIA Logo" className="w-12 h-12 object-contain" />
+            <span className="text-xl font-bold text-white">HarmonAI</span>
           </div>
-          
+
           <div className="hidden md:flex items-center space-x-4">
             {items.map((item) => {
               const Icon = item.icon
@@ -45,10 +46,9 @@ const Navigation: React.FC<NavigationProps> = ({
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors relative
-                    ${
-                      currentPage === item.id
-                        ? 'text-purple-300'
-                        : 'text-gray-300 hover:text-purple-300'
+                    ${currentPage === item.id
+                      ? 'text-purple-300'
+                      : 'text-gray-300 hover:text-purple-300'
                     }`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
