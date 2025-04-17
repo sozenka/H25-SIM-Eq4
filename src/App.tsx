@@ -11,7 +11,7 @@ import Login from './pages/Login'
 type Page = 'home' | 'composition' | 'ai' | 'analysis' | 'recordings' | 'settings' | 'login'
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('login')
+  const [currentPage, setCurrentPage] = useState<Page>('home')
   const navItems = [
     { id: 'home', label: 'Accueil', icon: HomeIcon },
     { id: 'composition', label: 'Composition', icon: Music },
