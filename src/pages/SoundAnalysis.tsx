@@ -1,25 +1,40 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Upload, Link, Music, Play, Pause, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AudioVisualizer from '../components/AudioVisualizer'
 import { useMusicStore } from '../store/musicStore'
 
 const SoundAnalysis = () => {
-  const { currentScale, recordings } = useMusicStore()
+  const { currentScale, recordings, analyzeAudio } = useMusicStore()
   const [audioUrl, setAudioUrl] = useState<string>('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [analysis, setAnalysis] = useState<{
+    scale: string;
+    chords: string[];
+    tempo: number;
+  } | null>(null)
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       if (file.type.startsWith('audio/')) {
         setAudioFile(file)
         setAudioUrl(URL.createObjectURL(file))
         setError('')
+        
+        // Analyze the uploaded audio
+        try {
+          const arrayBuffer = await file.arrayBuffer()
+          const result = await analyzeAudio(arrayBuffer)
+          setAnalysis(result)
+        } catch (err) {
+          console.error('Error analyzing audio:', err)
+          setError('Failed to analyze audio file')
+        }
       } else {
         setError('Please upload an audio file (MP3, WAV, etc.)')
       }
@@ -44,6 +59,11 @@ const SoundAnalysis = () => {
 
       const blob = await response.blob()
       setAudioUrl(URL.createObjectURL(blob))
+      
+      // Analyze the YouTube audio
+      const arrayBuffer = await blob.arrayBuffer()
+      const result = await analyzeAudio(arrayBuffer)
+      setAnalysis(result)
       setError('')
     } catch (err) {
       setError('Failed to process YouTube URL. Please try again.')
@@ -52,10 +72,19 @@ const SoundAnalysis = () => {
     }
   }
 
+  const handleRecordingSelect = async (recording: any) => {
+    if (recording.audioData) {
+      setAudioUrl(URL.createObjectURL(new Blob([recording.audioData])))
+      const result = await analyzeAudio(recording.audioData)
+      setAnalysis(result)
+    }
+  }
+
   const clearAudio = () => {
     setAudioUrl('')
     setAudioFile(null)
     setYoutubeUrl('')
+    setAnalysis(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -122,7 +151,7 @@ const SoundAnalysis = () => {
               {recordings.map((recording) => (
                 <button
                   key={recording.id}
-                  onClick={() => setAudioUrl(`/api/recordings/${recording.id}`)}
+                  onClick={() => handleRecordingSelect(recording)}
                   className="w-full flex items-center justify-between p-3 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
@@ -160,15 +189,17 @@ const SoundAnalysis = () => {
             <div className="space-y-4">
               <div className="p-4 bg-purple-500/10 rounded-lg">
                 <h4 className="text-purple-300 font-medium mb-2">Gamme Détectée</h4>
-                <p className="text-purple-200">{currentScale} Majeur</p>
+                <p className="text-purple-200">{analysis?.scale || currentScale} Majeur</p>
               </div>
               <div className="p-4 bg-purple-500/10 rounded-lg">
                 <h4 className="text-purple-300 font-medium mb-2">Accords Identifiés</h4>
-                <p className="text-purple-200">CMaj7 - Am7 - Dm7 - G7</p>
+                <p className="text-purple-200">
+                  {analysis?.chords ? analysis.chords.join(' - ') : 'En attente d\'analyse...'}
+                </p>
               </div>
               <div className="p-4 bg-purple-500/10 rounded-lg">
                 <h4 className="text-purple-300 font-medium mb-2">Tempo</h4>
-                <p className="text-purple-200">120 BPM</p>
+                <p className="text-purple-200">{analysis?.tempo || '---'} BPM</p>
               </div>
             </div>
           </div>
