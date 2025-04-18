@@ -64,6 +64,22 @@ const Composition = () => {
     }, 200); //tempo de la barre
   };
 
+  const jouerNotesColonneAct = (colonne: number) => {
+    const notesDansColonne = Array.from(activeNotes) //transforme le set en array pour faciliter les manipulations
+      .filter((noteStr) => {
+        const [rowStr, colStr] = noteStr.split(":");
+        return parseInt(colStr) === colonne;
+      })
+      .map((noteStr) => {
+        const [rowStr, _] = noteStr.split(":");
+        const row = parseInt(rowStr);
+        const noteEnMidi = 48 + row;
+        return noteEnMidi;
+      });
+
+    console.log("Note jouee a colonne ", colonne, ": ", notesDansColonne);
+  };
+
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
       {" "}
