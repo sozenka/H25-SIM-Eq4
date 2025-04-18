@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Piano from "../components/Piano";
 import { useMusicStore } from "../store/musicStore";
 
@@ -45,18 +45,23 @@ const Composition = () => {
 
   const [playing, setPlaying] = useState(false);
   const [colonneActuelle, setColonneActuelle] = useState<number | null>(null);
+  const intervalle = useRef<NodeJS.Timeout | null>(null);
+  const colonneRef = useRef(0);
 
   const playPianoRoll = () => {
-    let col = 0;
-    const interval = setInterval(() => {
-      setColonneActuelle(col);
-      col++;
+    setPlaying(true);
+    colonneRef.current = 0;
 
-      if (col >= 100) {
-        clearInterval(interval);
-        setColonneActuelle(null); //pour faire le reset
+    intervalle.current = setInterval(() => {
+      setColonneActuelle(colonneRef.current);
+      colonneRef.current++;
+
+      if (colonneRef.current >= 100) {
+        clearInterval(intervalle.current!); //pour faire le reset a la fin des 100 colonnes
+        setColonneActuelle(null);
+        setPlaying(false);
       }
-    }, 200); //le tempo du piano roll
+    }, 200); //tempo de la barre
   };
 
   return (
@@ -109,7 +114,7 @@ const Composition = () => {
                         className={`border border-gray-300 cursor-pointer transition-colors duration-75
                           ${
                             isColonneAct
-                              ? "bg-pink-400 animate-pulse"
+                              ? "bg-pink-400"
                               : isActive
                               ? "bg-blue-500 hover:bg-blue-600"
                               : isDarkRow
@@ -160,14 +165,15 @@ const Composition = () => {
             </h3>
             <div className="space-y-4">
               <button
-                onClick={
-                  playing
-                    ? () => {
-                        setPlaying(false);
-                        setColonneActuelle(null);
-                      }
-                    : playPianoRoll
-                }
+                onClick={() => {
+                  if (playing) {
+                    clearInterval(intervalle.current!);
+                    setPlaying(false);
+                    setColonneActuelle(null);
+                  } else {
+                    playPianoRoll();
+                  }
+                }}
                 className={`w-full py-2 rounded ${
                   playing
                     ? "bg-red-600 hover:bg-red-700"
