@@ -17,6 +17,7 @@ const Composition = () => {
     useMusicStore();
 
   const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
+  const [pause, setPause] = useState(false);
 
   const noteMap: string[] = [
     "C3",
@@ -105,8 +106,13 @@ const Composition = () => {
   const colonneRef = useRef(0);
 
   const playPianoRoll = () => {
+    if (pause) {
+      setPause(false);
+    } else {
+      colonneRef.current = 0;
+    }
+
     setPlaying(true);
-    colonneRef.current = 0;
 
     intervalle.current = setInterval(() => {
       const currentCol = colonneRef.current;
@@ -130,24 +136,17 @@ const Composition = () => {
         clearInterval(intervalle.current!); //pour faire le reset a la fin des 100 colonnes
         setColonneActuelle(null);
         setPlaying(false);
+        setPause(false);
       }
     }, 200); //tempo de la barre
   };
 
-  const jouerNotesColonneAct = (colonne: number) => {
-    const notesDansColonne = Array.from(activeNotes) //transforme le set en array pour faciliter les manipulations
-      .filter((noteStr) => {
-        const [rowStr, colStr] = noteStr.split(":");
-        return parseInt(colStr) === colonne;
-      })
-      .map((noteStr) => {
-        const [rowStr, _] = noteStr.split(":");
-        const row = parseInt(rowStr);
-        const noteEnMidi = 48 + row;
-        return noteEnMidi;
-      });
-
-    console.log("Note jouee a colonne ", colonne, ": ", notesDansColonne);
+  const pausePianoRoll = () => {
+    if (intervalle.current) {
+      clearInterval(intervalle.current);
+      setPause(true);
+      setPlaying(false);
+    }
   };
 
   return (
@@ -255,6 +254,7 @@ const Composition = () => {
                   if (playing) {
                     clearInterval(intervalle.current!);
                     setPlaying(false);
+                    setPause(false);
                     setColonneActuelle(null);
                   } else {
                     playPianoRoll();
@@ -262,18 +262,39 @@ const Composition = () => {
                 }}
                 className={`w-full py-2 rounded ${
                   playing
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-red-500 hover:bg-red-600"
+                    ? "bg-pink-600 hover:bg-pink-700"
+                    : "bg-pink-500 hover:bg-pink-600"
                 } text-white transition-colors`}
               >
                 {playing ? "Arrêter la lecture" : "Démarrer la lecture"}
               </button>
+
               <button
+                onClick={pausePianoRoll}
+                disabled={!playing}
+                className="w-full py-2 rounded bg-blue-500 text-white hover:bg-blue-500 transition-colors"
+              >
+                Pause
+              </button>
+
+              <button
+                onClick={() => {
+                  if (pause) {
+                    playPianoRoll(); // reprendre
+                  }
+                }}
+                disabled={!pause}
+                className="w-full py-2 rounded bg-purple-500 text-white hover:bg-purple-500 transition-colors"
+              >
+                Reprendre
+              </button>
+
+              {/* <button
                 className="w-full py-2 rounded bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 transition-colors"
                 disabled={recording}
               >
                 Lecture
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
