@@ -77,6 +77,10 @@ const Composition = () => {
         newSet.delete(carre);
       } else {
         newSet.add(carre);
+        const note = noteMap[row];
+        if (note) {
+          playNote(note);
+        }
       }
       return newSet;
     });
