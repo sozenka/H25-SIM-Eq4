@@ -109,11 +109,13 @@ const Composition = () => {
       setColonneActuelle(currentCol);
 
       activeNotes.forEach((carre) => {
+        //extraire numeros de ligne et colonne
         const [rowStr, colStr] = carre.split(":");
         const row = parseInt(rowStr);
         const col = parseInt(colStr);
 
         if (col === currentCol && noteMap[row]) {
+          //verifier si la note est dans la colonne actuelle
           playNote(noteMap[row]);
         }
       });
