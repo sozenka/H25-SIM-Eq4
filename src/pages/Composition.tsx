@@ -13,9 +13,61 @@ const Composition = () => {
     2, 4, 7, 9, 11, 14, 16, 19, 21, 23, 26, 28, 31, 33, 35, 38, 40, 43, 45, 47,
   ];
 
-  const { startRecording, stopRecording, recording } = useMusicStore();
+  const { startRecording, stopRecording, recording, playNote, currentOctave } =
+    useMusicStore();
 
   const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
+
+  const noteMap: string[] = [
+    "C3",
+    "C#3",
+    "D3",
+    "D#3",
+    "E3",
+    "F3",
+    "F#3",
+    "G3",
+    "G#3",
+    "A3",
+    "A#3",
+    "B3",
+    "C4",
+    "C#4",
+    "D4",
+    "D#4",
+    "E4",
+    "F4",
+    "F#4",
+    "G4",
+    "G#4",
+    "A4",
+    "A#4",
+    "B4",
+    "C5",
+    "C#5",
+    "D5",
+    "D#5",
+    "E5",
+    "F5",
+    "F#5",
+    "G5",
+    "G#5",
+    "A5",
+    "A#5",
+    "B5",
+    "C6",
+    "C#6",
+    "D6",
+    "D#6",
+    "E6",
+    "F6",
+    "F#6",
+    "G6",
+    "G#6",
+    "A6",
+    "A#6",
+    "B6",
+  ];
 
   const changerEtatNote = (row: number, col: number) => {
     const carre = `${row}:${col}`;
@@ -53,7 +105,19 @@ const Composition = () => {
     colonneRef.current = 0;
 
     intervalle.current = setInterval(() => {
-      setColonneActuelle(colonneRef.current);
+      const currentCol = colonneRef.current;
+      setColonneActuelle(currentCol);
+
+      activeNotes.forEach((carre) => {
+        const [rowStr, colStr] = carre.split(":");
+        const row = parseInt(rowStr);
+        const col = parseInt(colStr);
+
+        if (col === currentCol && noteMap[row]) {
+          playNote(noteMap[row]);
+        }
+      });
+
       colonneRef.current++;
 
       if (colonneRef.current >= 100) {
