@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Piano from "../components/Piano";
 import { useMusicStore } from "../store/musicStore";
 
@@ -13,9 +13,62 @@ const Composition = () => {
     2, 4, 7, 9, 11, 14, 16, 19, 21, 23, 26, 28, 31, 33, 35, 38, 40, 43, 45, 47,
   ];
 
-  const { startRecording, stopRecording, recording } = useMusicStore();
+  const { startRecording, stopRecording, recording, playNote, currentOctave } =
+    useMusicStore();
 
   const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
+  const [pause, setPause] = useState(false);
+
+  const noteMap: string[] = [
+    "C3",
+    "C#3",
+    "D3",
+    "D#3",
+    "E3",
+    "F3",
+    "F#3",
+    "G3",
+    "G#3",
+    "A3",
+    "A#3",
+    "B3",
+    "C4",
+    "C#4",
+    "D4",
+    "D#4",
+    "E4",
+    "F4",
+    "F#4",
+    "G4",
+    "G#4",
+    "A4",
+    "A#4",
+    "B4",
+    "C5",
+    "C#5",
+    "D5",
+    "D#5",
+    "E5",
+    "F5",
+    "F#5",
+    "G5",
+    "G#5",
+    "A5",
+    "A#5",
+    "B5",
+    "C6",
+    "C#6",
+    "D6",
+    "D#6",
+    "E6",
+    "F6",
+    "F#6",
+    "G6",
+    "G#6",
+    "A6",
+    "A#6",
+    "B6",
+  ];
 
   const changerEtatNote = (row: number, col: number) => {
     const carre = `${row}:${col}`;
@@ -25,6 +78,10 @@ const Composition = () => {
         newSet.delete(carre);
       } else {
         newSet.add(carre);
+        const note = noteMap[row];
+        if (note) {
+          playNote(note);
+        }
       }
       return newSet;
     });
@@ -45,18 +102,51 @@ const Composition = () => {
 
   const [playing, setPlaying] = useState(false);
   const [colonneActuelle, setColonneActuelle] = useState<number | null>(null);
+  const intervalle = useRef<NodeJS.Timeout | null>(null);
+  const colonneRef = useRef(0);
 
   const playPianoRoll = () => {
-    let col = 0;
-    const interval = setInterval(() => {
-      setColonneActuelle(col);
-      col++;
+    if (pause) {
+      setPause(false);
+    } else {
+      colonneRef.current = 0;
+    }
 
-      if (col >= 100) {
-        clearInterval(interval);
-        setColonneActuelle(null); //pour faire le reset
+    setPlaying(true);
+
+    intervalle.current = setInterval(() => {
+      const currentCol = colonneRef.current;
+      setColonneActuelle(currentCol);
+
+      activeNotes.forEach((carre) => {
+        //extraire numeros de ligne et colonne
+        const [rowStr, colStr] = carre.split(":");
+        const row = parseInt(rowStr);
+        const col = parseInt(colStr);
+
+        if (col === currentCol && noteMap[row]) {
+          //verifier si la note est dans la colonne actuelle
+          playNote(noteMap[row]);
+        }
+      });
+
+      colonneRef.current++;
+
+      if (colonneRef.current >= 100) {
+        clearInterval(intervalle.current!); //pour faire le reset a la fin des 100 colonnes
+        setColonneActuelle(null);
+        setPlaying(false);
+        setPause(false);
       }
-    }, 200); //le tempo du piano roll
+    }, 200); //tempo de la barre
+  };
+
+  const pausePianoRoll = () => {
+    if (intervalle.current) {
+      clearInterval(intervalle.current);
+      setPause(true);
+      setPlaying(false);
+    }
   };
 
   return (
@@ -109,7 +199,7 @@ const Composition = () => {
                         className={`border border-gray-300 cursor-pointer transition-colors duration-75
                           ${
                             isColonneAct
-                              ? "bg-pink-400 animate-pulse"
+                              ? "bg-pink-400"
                               : isActive
                               ? "bg-blue-500 hover:bg-blue-600"
                               : isDarkRow
@@ -160,28 +250,51 @@ const Composition = () => {
             </h3>
             <div className="space-y-4">
               <button
-                onClick={
-                  playing
-                    ? () => {
-                        setPlaying(false);
-                        setColonneActuelle(null);
-                      }
-                    : playPianoRoll
-                }
+                onClick={() => {
+                  if (playing) {
+                    clearInterval(intervalle.current!);
+                    setPlaying(false);
+                    setPause(false);
+                    setColonneActuelle(null);
+                  } else {
+                    playPianoRoll();
+                  }
+                }}
                 className={`w-full py-2 rounded ${
                   playing
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-red-500 hover:bg-red-600"
+                    ? "bg-pink-600 hover:bg-pink-700"
+                    : "bg-pink-500 hover:bg-pink-600"
                 } text-white transition-colors`}
               >
                 {playing ? "Arrêter la lecture" : "Démarrer la lecture"}
               </button>
+
               <button
+                onClick={pausePianoRoll}
+                disabled={!playing}
+                className="w-full py-2 rounded bg-blue-500 text-white hover:bg-blue-500 transition-colors"
+              >
+                Pause
+              </button>
+
+              <button
+                onClick={() => {
+                  if (pause) {
+                    playPianoRoll(); // reprendre
+                  }
+                }}
+                disabled={!pause}
+                className="w-full py-2 rounded bg-purple-500 text-white hover:bg-purple-500 transition-colors"
+              >
+                Reprendre
+              </button>
+
+              {/* <button
                 className="w-full py-2 rounded bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 transition-colors"
                 disabled={recording}
               >
                 Lecture
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
