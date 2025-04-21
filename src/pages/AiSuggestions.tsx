@@ -4,7 +4,6 @@ import ReactMarkdown from 'react-markdown';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMusicStore } from '../store/musicStore';
-import { getResponse } from '../lib/musicAssistant.ts';
 
 interface Message {
   id: string;
