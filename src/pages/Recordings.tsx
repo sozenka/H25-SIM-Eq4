@@ -1,10 +1,85 @@
-import React from 'react'
-import { Play, Trash2, Download } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { Play, Trash2, Download, Edit2, Check, X } from 'lucide-react'
 import { useMusicStore } from '../store/musicStore'
 import { motion, AnimatePresence } from 'framer-motion'
+import type { Recording } from '../store/musicStore'
+import { downloadRecording } from '../utils/audio'
+
+// Helper function to convert Base64 to ArrayBuffer
+const base64ToBuffer = (base64: string): ArrayBuffer => {
+  const binaryString = window.atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+};
 
 const Recordings = () => {
-  const { recordings, playRecording } = useMusicStore()
+  const { recordings, playRecording, loadRecordings, deleteRecording, updateRecordingName } = useMusicStore()
+  const [editingRecordingId, setEditingRecordingId] = useState<string | null>(null)
+  const [newRecordingName, setNewRecordingName] = useState('')
+
+  useEffect(() => {
+    loadRecordings()
+  }, [loadRecordings])
+
+  const handlePlayRecording = async (recording: Recording) => {
+    try {
+      await playRecording(recording)
+    } catch (error) {
+      console.error('Error playing recording:', error)
+    }
+  }
+
+  const handleDeleteRecording = (recordingId: string) => {
+    if (window.confirm('Are you sure you want to delete this recording?')) {
+      deleteRecording(recordingId)
+    }
+  }
+
+  const handleRenameRecording = (recordingId: string, newName: string) => {
+    if (newName.trim()) {
+      updateRecordingName(recordingId, newName.trim())
+      setEditingRecordingId(null)
+      setNewRecordingName('')
+    }
+  }
+
+  const handleDownloadRecording = (recording: Recording) => {
+    if (!recording.audioData) {
+      alert('No audio data available for this recording');
+      return;
+    }
+
+    try {
+      // Ensure we have the correct audio data format
+      const audioData = typeof recording.audioData === 'string' 
+        ? base64ToBuffer(recording.audioData)
+        : recording.audioData;
+
+      // Create a blob with the correct MIME type
+      const blob = new Blob([audioData], { type: 'audio/webm' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${recording.name || 'recording'}.webm`;
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL object
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading recording:', error);
+      alert('Failed to download recording. Please try again.');
+    }
+  };
 
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
@@ -24,33 +99,80 @@ const Recordings = () => {
               </p>
             </motion.div>
           ) : (
-            recordings.map((recording, index) => (
+            recordings.map((recording) => (
               <motion.div
                 key={recording.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-black/20 p-4 rounded-lg border border-purple-500/20 flex items-center justify-between group hover:border-purple-500/40 transition-all"
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-purple-500/10 hover:bg-purple-500/20 p-4 rounded-lg flex items-center justify-between"
               >
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium text-white">{recording.name}</h3>
+                  {editingRecordingId === recording.id ? (
+                    <input
+                      type="text"
+                      value={newRecordingName}
+                      onChange={(e) => setNewRecordingName(e.target.value)}
+                      className="bg-white/10 text-white px-2 py-1 rounded w-full"
+                      autoFocus
+                    />
+                  ) : (
+                    <h3 className="text-purple-200 font-medium">{recording.name}</h3>
+                  )}
                   <p className="text-purple-300 text-sm">
                     {new Date(recording.createdAt).toLocaleDateString()} • {recording.duration}
                   </p>
                 </div>
-                <div className="flex space-x-2">
-                  <button 
-                    onClick={() => playRecording(recording)}
-                    className="p-2 rounded-lg bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 transition-colors"
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handlePlayRecording(recording)}
+                    className="p-2 text-purple-400 hover:text-purple-300"
                   >
                     <Play className="w-5 h-5" />
                   </button>
-                  <button className="p-2 rounded-lg bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 transition-colors">
-                    <Download className="w-5 h-5" />
-                  </button>
-                  <button className="p-2 rounded-lg bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  {editingRecordingId === recording.id ? (
+                    <>
+                      <button
+                        onClick={() => handleRenameRecording(recording.id, newRecordingName)}
+                        className="p-2 text-green-400 hover:text-green-300"
+                      >
+                        <Check className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingRecordingId(null)
+                          setNewRecordingName('')
+                        }}
+                        className="p-2 text-red-400 hover:text-red-300"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingRecordingId(recording.id)
+                          setNewRecordingName(recording.name)
+                        }}
+                        className="p-2 text-blue-400 hover:text-blue-300"
+                      >
+                        <Edit2 className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => downloadRecording(recording)}
+                        className="p-2 text-purple-400 hover:text-purple-300"
+                      >
+                        <Download className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRecording(recording.id)}
+                        className="p-2 text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </motion.div>
             ))

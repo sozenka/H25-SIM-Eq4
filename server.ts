@@ -4,7 +4,7 @@ const cors = require('cors')
 const { handleSignUp, handleSignIn } = require('./src/lib/api/auth')
 
 const app = express()
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 10000
 
 // Middleware
 app.use(cors())
@@ -28,6 +28,7 @@ app.get('/health', (req, res) => {
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`)
+  console.log(`✅ Server accessible at http://0.0.0.0:${PORT}`)
 })
 
 // Handle unhandled promise rejections
