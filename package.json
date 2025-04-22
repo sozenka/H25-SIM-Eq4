@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "node server.ts"
+    "start": "npm run build && node dist/server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
