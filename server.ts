@@ -11,8 +11,12 @@ const PORT = parseInt(process.env.PORT || '10000', 10);
 app.use(cors());
 app.use(express.json());
 
-app.post('/api/auth/signup', handleSignUp);
-app.post('/api/auth/login', handleSignIn);
+app.post('/api/auth/signup', (req: Request, res: Response, next: NextFunction) => {
+  handleSignUp(req, res).catch(next);
+});
+app.post('/api/auth/login', (req: Request, res: Response, next: NextFunction) => {
+  handleSignIn(req, res).catch(next);
+});
 
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok' });
