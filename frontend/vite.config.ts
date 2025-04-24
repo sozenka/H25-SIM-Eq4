@@ -15,7 +15,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000', // ✅ FIXED BACKEND PORT
+        target: 'https://h25-sim-eq4.onrender.com',
         changeOrigin: true
       }
     }

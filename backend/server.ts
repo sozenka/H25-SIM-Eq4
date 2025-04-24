@@ -1,12 +1,12 @@
 import dotenv from 'dotenv';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { handleSignUp, handleSignIn } from './src/lib/api/auth';
+import { handleSignUp, handleSignIn } from './src/lib/api/auth'; // fixed relative path
 
 dotenv.config();
 
 const rawPort = process.env.PORT;
-const PORT = rawPort && !isNaN(Number(rawPort)) ? Number(rawPort) : 5000; // Default to 5000 if PORT is not set or invalid
+const PORT = rawPort && !isNaN(Number(rawPort)) ? Number(rawPort) : 5000;
 
 const app = express();
 
@@ -16,6 +16,7 @@ app.use(express.json());
 app.post('/api/auth/signup', (req: Request, res: Response, next: NextFunction) => {
   handleSignUp(req, res).catch(next);
 });
+
 app.post('/api/auth/login', (req: Request, res: Response, next: NextFunction) => {
   handleSignIn(req, res).catch(next);
 });

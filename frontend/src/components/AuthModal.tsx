@@ -35,13 +35,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setError(null)
     setSuccess(null)
 
+    const API_URL = import.meta.env.VITE_API_URL
+
     try {
       if (isSignUp) {
         if (password !== confirmPassword) {
           throw new Error('Passwords do not match')
         }
 
-        const response = await fetch('/api/auth/signup', {
+        const response = await fetch(`${API_URL}/api/auth/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, username, password })
@@ -49,14 +51,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
         const data = await response.json()
         if (!response.ok) throw new Error(data.message || 'Failed to sign up')
-        
+
         setSuccess('Account created successfully! Please sign in.')
         setTimeout(() => {
           setIsSignUp(false)
           setSuccess(null)
         }, 2000)
       } else {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
