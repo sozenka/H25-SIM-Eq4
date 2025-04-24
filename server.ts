@@ -6,33 +6,27 @@ import { handleSignUp, handleSignIn } from './src/lib/api/auth';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = parseInt(process.env.PORT || '10000', 10);
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes
 app.post('/api/auth/signup', handleSignUp);
 app.post('/api/auth/login', handleSignIn);
 
-// Health check
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
 });
 
-// Shutdown handlers
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Promise Rejection:', err);
 });
