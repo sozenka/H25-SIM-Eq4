@@ -6,7 +6,7 @@ import { handleSignUp, handleSignIn } from './src/lib/api/auth';
 dotenv.config();
 
 const rawPort = process.env.PORT;
-const PORT = rawPort && !isNaN(Number(rawPort)) ? Number(rawPort) : 10000;
+const PORT = rawPort && !isNaN(Number(rawPort)) ? Number(rawPort) : 5000; // Default to 5000 if PORT is not set or invalid
 
 const app = express();
 

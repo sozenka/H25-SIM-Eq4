@@ -34,7 +34,7 @@ const Navigation: React.FC<NavigationProps> = ({
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-2">
             <img src={Logo} alt="HarmonIA Logo" className="w-12 h-12 object-contain" />
-            <span className="text-xl font-bold text-white">HarmonAI</span>
+            <span className="text-xl font-bold text-white">HarmonIA</span>
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
