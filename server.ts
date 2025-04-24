@@ -5,34 +5,37 @@ import { handleSignUp, handleSignIn } from './src/lib/api/auth';
 
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 10000;
+const rawPort = process.env.PORT;
+const PORT = rawPort && !isNaN(Number(rawPort)) ? Number(rawPort) : 10000;
 
-// Middleware
+const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.post('/api/auth/signup', handleSignUp);
-app.post('/api/auth/login', handleSignIn);
+app.post('/api/auth/signup', (req: Request, res: Response, next: NextFunction) => {
+  handleSignUp(req, res).catch(next);
+});
+app.post('/api/auth/login', (req: Request, res: Response, next: NextFunction) => {
+  handleSignIn(req, res).catch(next);
+});
 
-// Health check
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// Start server
+console.log("🌍 Listening on PORT ENV:", process.env.PORT);
+console.log("✅ Final Parsed PORT:", PORT);
+
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
+  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
 });
 
-// Shutdown handlers
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Promise Rejection:', err);
 });
