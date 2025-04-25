@@ -33,11 +33,15 @@ npm install
 ### 3. Lancer le frontend (Serveur Vite)
 
 ```bash
+cd frontend
 npm install
+npm run dev
 ```
 
 ### 4. Lancer le backend (Serveur Express en TypeScript)
 
 ```bash
-npx ts-node server.ts
+cd backend
+npm install
+npm run dev
 ```
