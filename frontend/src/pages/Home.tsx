@@ -50,7 +50,7 @@ const Home: React.FC<HomeProps> = ({ onGetStarted }) => {
           },
           {
             icon: KeyboardMusic,
-            title: 'Synthéthiseur',
+            title: 'Synthétiseur',
             description:
               "Une initiation à la synthèse sonore de base avec visualisation de l'onde audio."
           }
@@ -73,7 +73,7 @@ const Home: React.FC<HomeProps> = ({ onGetStarted }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="text-center"
+        className="text-center space-y-4"
       >
         <motion.button
           onClick={onGetStarted}
@@ -84,7 +84,15 @@ const Home: React.FC<HomeProps> = ({ onGetStarted }) => {
           <span>Commencer une composition</span>
           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </motion.button>
-        <a href="synth.html" target='_blank'>Synthétiseur</a>
+        <motion.button
+          onClick={() => window.open('/synth.html', '_blank')}
+          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center mx-auto gap-2 group"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <span>Essayer le synthétiseur</span>
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        </motion.button>
       </motion.div>
     </div>
   )

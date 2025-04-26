@@ -18,7 +18,19 @@ const typesOsc = [
     'sine',
     'square',
     'triangle',
-    'sawtooth'
+    'sawtooth',
+    'fatsine',
+    'fatsquare',
+    'fattriangle',
+    'fatsawtooth',
+    'amsine',
+    'amsquare',
+    'amtriangle',
+    'amsawtooth',
+    'fmsine',
+    'fmsquare',
+    'fmtriangle',
+    'fmsawtooth'
 ]
 
 const clavierVersNotes = {
@@ -102,8 +114,8 @@ function initialiserSynth() {
     gui = new dat.GUI({hideable: false});
     gui.width = 0.25*window.innerWidth;
     gui.add(synth.oscillator, "type", typesOsc)
-    const envelopeFolder = gui.addFolder('Envelope');
-    const effectsFolder = gui.addFolder('Effects');
+    const envelopeFolder = gui.addFolder('Enveloppe');
+    const effectsFolder = gui.addFolder('Effets');
     // le 'wet' indique a quel point l'effet est ressenti. une valeur de 0 desactive l'effet.
     effectsFolder.add(distortion.wet, "value", 0, 1).step(0.01).name('distortion');
     effectsFolder.add(chorus.wet, "value", 0, 1).step(0.01).name('chorus');
@@ -128,6 +140,7 @@ function draw() {
     } else {
 
         background(0, 50);
+        /* background('black'); */
         stroke('white');
         noFill();
 
