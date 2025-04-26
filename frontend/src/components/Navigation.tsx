@@ -36,7 +36,6 @@ const Navigation: React.FC<NavigationProps> = ({
             <img src={Logo} alt="HarmonIA Logo" className="w-12 h-12 object-contain" />
             <span className="text-xl font-bold text-white">HarmonIA</span>
           </div>
-
           <div className="hidden md:flex items-center space-x-4">
             {items.map((item) => {
               const Icon = item.icon
@@ -79,7 +78,7 @@ const Navigation: React.FC<NavigationProps> = ({
                   whileTap={{ scale: 0.95 }}
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Logout</span>
+                  <span>Se déconnecter</span>
                 </motion.button>
               </>
             ) : (
@@ -90,7 +89,7 @@ const Navigation: React.FC<NavigationProps> = ({
                 whileTap={{ scale: 0.95 }}
               >
                 <LogIn className="w-4 h-4" />
-                <span>Sign In</span>
+                <span>Connexion</span>
               </motion.button>
             )}
           </div>

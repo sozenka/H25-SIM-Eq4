@@ -21,8 +21,25 @@ const typesOsc = [
     'sawtooth'
 ]
 
+const clavierVersNotes = {
+    'a': 'C4',
+    'w': 'C#4',
+    's': 'D4',
+    'e': 'D#4',
+    'd': 'E4',
+    'f': 'F4',
+    't': 'F#4',
+    'g': 'G4',
+    'y': 'G#4',
+    'h': 'A4',
+    'u': 'A#4',
+    'j': 'B4',
+    'k': 'C5'
+  };
+  
+
 function setup() {
-    createCanvas(1000, 800);
+    createCanvas(window.innerWidth, window.innerHeight); // plein ecran
 }
 
 function initialiserSynth() {
@@ -82,9 +99,8 @@ function initialiserSynth() {
 
 
     // initialisaiton de l'interface utilisateur
-    gui = new dat.GUI();
-    gui.width = 500;
-    gui.height =  500;
+    gui = new dat.GUI({hideable: false});
+    gui.width = 0.25*window.innerWidth;
     gui.add(synth.oscillator, "type", typesOsc)
     const envelopeFolder = gui.addFolder('Envelope');
     const effectsFolder = gui.addFolder('Effects');
@@ -106,12 +122,12 @@ function draw() {
 
     if (!ready) {
         background('black');
-        stroke('purple');
+        stroke('white');
         line(0, height/2, width, height/2);
     
     } else {
 
-        background(0, 20);
+        background(0, 50);
         stroke('white');
         noFill();
 
@@ -142,7 +158,30 @@ function draw() {
     }
 }
 
-const playBtn = document.getElementById("play-btn")
+
+document.addEventListener('keydown', (e) => {
+    // attend un input pour jouer un son dans le navigateur
+    if (ready == false) {
+        ready = true;
+        initialiserSynth();
+    }
+    if (e.repeat) return;
+
+    const note = clavierVersNotes[e.key];
+    if (note) {
+        synth.triggerAttack(note); // frequence de la note jouee
+    }
+
+  });
+
+  document.addEventListener('keyup', (e) => {
+    const note = clavierVersNotes[e.key];
+    if (note) {
+        synth.triggerRelease();
+    }
+  })
+
+/* const playBtn = document.getElementById("play-btn")
 
 playBtn.addEventListener("mousedown", () => {
     // attend un input pour jouer un son dans le navigateur
@@ -150,9 +189,17 @@ playBtn.addEventListener("mousedown", () => {
         ready = true;
         initialiserSynth();
     }
+
+
     synth.triggerAttack(random(220, 440)); // frequence de la note jouee
+
 })
 
 playBtn.addEventListener("mouseup", () => {
     synth.triggerRelease();
-})
+}) */
+
+// redimensionne le canvas si on change les dimensions de la fenetre
+function windowResized() {
+    resizeCanvas(window.innerWidth, window.innerHeight);
+}

@@ -117,12 +117,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl" />
               </motion.div>
               <h2 className="text-3xl font-bold text-white mb-2">
-                {isSignUp ? 'Join MusicAI Studio' : 'Welcome Back'}
+                {isSignUp ? 'Rejoindre HarmonIA' : 'Heureux de vous revoir!'}
               </h2>
               <p className="text-gray-400">
                 {isSignUp
-                  ? 'Create an account to start composing'
-                  : 'Sign in to continue your musical journey'}
+                  ? 'Créez un compte pour commencer à composer'
+                  : 'Connectez-vous pour continuer à composer'}
               </p>
             </div>
 
@@ -135,7 +135,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-black/20 border border-primary/20 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-primary/50 focus:ring focus:ring-primary/20 transition-all"
-                    placeholder="Email address"
+                    placeholder="Courriel"
                     required
                   />
                 </div>
@@ -148,7 +148,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       className="w-full bg-black/20 border border-primary/20 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-primary/50 focus:ring focus:ring-primary/20 transition-all"
-                      placeholder="Username"
+                      placeholder="Nom d'utilisateur"
                       required
                     />
                   </div>
@@ -161,7 +161,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full bg-black/20 border border-primary/20 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-primary/50 focus:ring focus:ring-primary/20 transition-all"
-                    placeholder="Password"
+                    placeholder="Mot de passe"
                     required
                   />
                 </div>
@@ -174,7 +174,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full bg-black/20 border border-primary/20 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-primary/50 focus:ring focus:ring-primary/20 transition-all"
-                      placeholder="Confirm password"
+                      placeholder="Confirmer mot de passe"
                       required
                     />
                   </div>
@@ -212,19 +212,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 {loading ? (
                   <span className="flex items-center justify-center">
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    {isSignUp ? 'Creating account...' : 'Signing in...'}
+                    {isSignUp ? 'Création du compte...' : 'Connexion...'}
                   </span>
                 ) : (
                   <span className="flex items-center justify-center">
                     {isSignUp ? (
                       <>
                         <UserPlus className="w-5 h-5 mr-2" />
-                        Create Account
+                        Créer un compte
                       </>
                     ) : (
                       <>
                         <LogIn className="w-5 h-5 mr-2" />
-                        Sign In
+                        Connexion
                       </>
                     )}
                   </span>
@@ -243,12 +243,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 {isSignUp ? (
                   <>
                     <LogIn className="w-4 h-4" />
-                    Already have an account? Sign in
+                    Vous avez déja un compte? Connectez-vous
                   </>
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4" />
-                    Don't have an account? Sign up
+                    Vous n'avez pas de compte? Inscrivez-vous
                   </>
                 )}
               </button>
