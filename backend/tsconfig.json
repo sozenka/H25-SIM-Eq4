@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "commonjs",
+    "outDir": "dist",
+    "rootDir": "./",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["backend/server.ts", "src/lib/api/**/*.ts", "src/lib/mongodb/**/*.ts"],
+  "exclude": ["src/pages", "src/components", "vite.config.ts", "index.html"]
+}

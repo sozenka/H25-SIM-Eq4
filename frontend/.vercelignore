@@ -1,0 +1,6 @@
+# .vercelignore
+server.ts
+src/lib/
+dist/
+tsconfig.json
+render.yaml
