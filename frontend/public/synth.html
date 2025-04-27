@@ -3,18 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Synthétiseur</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/15.1.5/Tone.min.js" integrity="sha512-9IrIKVg3FPjeODOYwW1g0xRVyJpnqjgczr6KnK/xQGKZaEVQeHGGVIFK7JC7jj4T+mEu//A1XZwUZwGywxddjA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js" integrity="sha512-I0Pwwz3PPNQkWes+rcSoQqikKFfRmTfGQrcNzZbm8ALaUyJuFdyRinl805shE8xT6iEWsWgvRxdXb3yhQNXKoA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js" integrity="sha512-WoO4Ih0CDOSLYafy22wZD/mcJ7k0ESLqtQsFa6zFKnEUrbtuGU+GkLtVhgt93xa2qewG5gKEC6CWlN8OaCTSVg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/tonal/browser/tonal.min.js"></script> -->
     <link rel="stylesheet" href="style_synth.css">
 </head>
 <body>
-    <!-- <button id="play-btn">Play</button> -->
-    <div class="container">
-        jouez le piano avec votre clavier (le piano va etre ici)
-    </div>
+    <!-- éléments du piano. Source : https://codepen.io/clkent/pen/dQwGqj . Modifié pour cette application. -->
+    <div class="keyboard-container">
+        <div class="naturals-container">
+          <button data-note="C4"><p>DO</p></button>
+          <button data-note="D4"><p>RÉ</p></button>
+          <button data-note="E4"><p>MI</p></button>
+          <button data-note="F4"><p>FA</p></button>
+          <button data-note="G4"><p>SOL</p></button>
+          <button data-note="A4"><p>LA</p></button>
+          <button data-note="B4"><p>SI</p></button>
+          <button data-note="C5"><p>DO</p></button>
+        </div>
+        <div class="accidentals-container">
+          <button class="C" data-note="C#4">DO#</button>
+          <button class="D" data-note="D#4">RÉ#</button>
+          <button class="F" data-note="F#4">FA#</button>
+          <button class="G" data-note="G#4">SOL#</button>
+          <button class="A" data-note="A#4">LA#</button>
+        </div>
+      </div>
     <script src="synth.js"></script>
 </body>
 </html>

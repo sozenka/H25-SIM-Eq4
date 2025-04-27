@@ -47,8 +47,8 @@ const clavierVersNotes = {
     'u': 'A#4',
     'j': 'B4',
     'k': 'C5'
-  };
-  
+};
+
 
 function setup() {
     createCanvas(window.innerWidth, window.innerHeight); // plein ecran
@@ -59,13 +59,13 @@ function initialiserSynth() {
     // initialisation des parametres par defaut
 
     synth = new Tone.Synth({
-       
+
         oscillator: {
             type: 'sine'
         },
 
         envelope: {
-            attack: 0.01, 
+            attack: 0.01,
             decay: 0.2,
             sustain: 0.5,
             release: 1.5
@@ -73,17 +73,17 @@ function initialiserSynth() {
     });
 
     distortion = new Tone.Distortion({
-        distortion: 0.3, 
-        wet: 0        
+        distortion: 0.4,
+        wet: 0
     });
 
     chorus = new Tone.Chorus({
         frequency: 1.5,
-        delayTime: 2.5,  
-        depth: 0.4,      
-        spread: 180,     
-        wet: 0         
-    }).start(); 
+        delayTime: 2.5,
+        depth: 0.4,
+        spread: 180,
+        wet: 0
+    }).start();
 
     delay = new Tone.FeedbackDelay({
         delayTime: "8n",
@@ -98,7 +98,7 @@ function initialiserSynth() {
     });
 
     // branchement des effets en serie
-    
+
     synth.connect(distortion);
     distortion.connect(chorus);
     chorus.connect(delay);
@@ -111,8 +111,8 @@ function initialiserSynth() {
 
 
     // initialisaiton de l'interface utilisateur
-    gui = new dat.GUI({hideable: false});
-    gui.width = 0.25*window.innerWidth;
+    gui = new dat.GUI({ hideable: false });
+    gui.width = 0.25 * window.innerWidth;
     gui.add(synth.oscillator, "type", typesOsc)
     const envelopeFolder = gui.addFolder('Enveloppe');
     const effectsFolder = gui.addFolder('Effets');
@@ -134,14 +134,14 @@ function draw() {
 
     if (!ready) {
         background('black');
-        stroke('white');
-        line(0, height/2, width, height/2);
-    
+        stroke('#9333ea');
+        line(0, height / 2, width, height / 2);
+
     } else {
 
         background(0, 50);
         /* background('black'); */
-        stroke('white');
+        stroke('#9333ea');
         noFill();
 
         let buffer = waveform.getValue(0); // partie de l'onde echantillionnee
@@ -149,27 +149,50 @@ function draw() {
         // cherche un endroit ou l'onde passe d'une valeur negative a positive pour determiner le debut du graphique
         let debut = 0;
         for (let i = 1; i < buffer.length; i++) {
-            if (buffer[i-1] < 0 && buffer[i] >= 0) {
+            if (buffer[i - 1] < 0 && buffer[i] >= 0) {
                 debut = i;
                 break;
             }
         }
-        
+
         // coupe l'onde pour en montrer seulement une partie dans le graphique
-        let fin = buffer.length/2 + debut;
+        let fin = buffer.length / 2 + debut;
 
         // dessine le graphique
         beginShape();
         for (let i = debut; i < buffer.length; i++) {
 
             let x = map(i, debut, fin, 0, width);
-            let y = map(buffer[i], -1, 1, 0, height);
+            let y = map(buffer[i], -1, 1, 0, height/1.5);
 
             vertex(x, y);
         }
         endShape();
     }
 }
+
+/* Fonctionnalites des differentes touches */
+
+const buttons = document.querySelectorAll('button[data-note]');
+
+buttons.forEach(button => {
+    // attend un input pour jouer un son dans le navigateur
+    if (ready == false) {
+        ready = true;
+        initialiserSynth();
+    }
+    button.addEventListener('mousedown', () => {
+        toucheAppuyee = true;
+        const note = button.dataset.note;
+        synth.triggerAttack(note, Tone.context.currentTime);
+    });
+    button.addEventListener('mouseup', () => {
+        synth.triggerRelease();
+    });
+    button.addEventListener('mouseout', () => {
+        synth.triggerRelease();
+    })
+});
 
 
 document.addEventListener('keydown', (e) => {
@@ -181,36 +204,19 @@ document.addEventListener('keydown', (e) => {
     if (e.repeat) return;
 
     const note = clavierVersNotes[e.key];
+
     if (note) {
-        synth.triggerAttack(note); // frequence de la note jouee
+        synth.triggerAttack(note, Tone.context.currentTime); // frequence de la note jouee
     }
 
-  });
+});
 
-  document.addEventListener('keyup', (e) => {
+document.addEventListener('keyup', (e) => {
     const note = clavierVersNotes[e.key];
     if (note) {
         synth.triggerRelease();
     }
-  })
-
-/* const playBtn = document.getElementById("play-btn")
-
-playBtn.addEventListener("mousedown", () => {
-    // attend un input pour jouer un son dans le navigateur
-    if (ready == false) {
-        ready = true;
-        initialiserSynth();
-    }
-
-
-    synth.triggerAttack(random(220, 440)); // frequence de la note jouee
-
 })
-
-playBtn.addEventListener("mouseup", () => {
-    synth.triggerRelease();
-}) */
 
 // redimensionne le canvas si on change les dimensions de la fenetre
 function windowResized() {
