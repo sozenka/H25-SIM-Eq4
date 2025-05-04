@@ -13,10 +13,12 @@ const PORT = Number(process.env.PORT) || 5000;
 app.use(cors());
 app.use(express.json());
 
+// ✅ Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || '', {})
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
+// ✅ Recording model
 const recordingSchema = new mongoose.Schema({
   userId: String,
   title: String,
@@ -24,38 +26,65 @@ const recordingSchema = new mongoose.Schema({
   notes: Array,
   createdAt: { type: Date, default: Date.now }
 });
-
 const Recording = mongoose.models.Recording || mongoose.model('Recording', recordingSchema);
 
+// ✅ Async wrapper
 const asyncHandler = (
   fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
 ) => (req: Request, res: Response, next: NextFunction) => {
   fn(req, res, next).catch(next);
 };
 
+// ✅ Auth routes
 app.post('/api/auth/signup', asyncHandler(handleSignUp));
 app.post('/api/auth/login', asyncHandler(handleSignIn));
 
+// ✅ Save recording metadata
 app.post('/api/recordings', asyncHandler(async (req: Request, res: Response) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Authentication required' });
+  console.log('📥 Received recording request');
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET || '') as { userId: string };
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    console.log('❌ No token provided');
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET || '') as { userId: string };
+  } catch (err) {
+    console.error('❌ Invalid token:', err);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+
   const { title, notes, audioUrl } = req.body;
 
-  if (!audioUrl) return res.status(400).json({ error: 'audioUrl is required' });
+  console.log('📦 Payload received:', { title, notesLength: notes?.length, audioUrl });
 
-  const recording = new Recording({
-    userId: decoded.userId,
-    title,
-    audioUrl,
-    notes,
-  });
+  if (!audioUrl) {
+    console.log('❌ Missing audioUrl');
+    return res.status(400).json({ error: 'audioUrl is required' });
+  }
 
-  await recording.save();
-  res.status(201).json(recording);
+  try {
+    const recording = new Recording({
+      userId: decoded.userId,
+      title,
+      audioUrl,
+      notes,
+    });
+
+    await recording.save();
+
+    console.log('✅ Recording saved in DB');
+    res.status(201).json(recording);
+  } catch (err) {
+    console.error('❌ DB Error while saving recording:', err);
+    res.status(500).json({ error: 'Server error saving recording', details: err });
+  }
 }));
 
+// ✅ Get user recordings
 app.get('/api/recordings', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Authentication required' });
@@ -66,15 +95,18 @@ app.get('/api/recordings', asyncHandler(async (req: Request, res: Response) => {
   res.json(recordings);
 }));
 
+// ✅ Health check
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+// ✅ Error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('❌ Server error:', err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  console.error('❌ Server error:', err.stack || err);
+  res.status(500).json({ error: 'Something went wrong!', details: err?.message || err });
 });
 
+// ✅ Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
 });
