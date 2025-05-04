@@ -1,9 +1,11 @@
 import mongoose from 'mongoose';
 import * as bcrypt from 'bcryptjs'
 import * as jwt from 'jsonwebtoken'
+import dotenv from 'dotenv';
+dotenv.config();
 
 const MONGODB_URI = 'mongodb+srv://sozenka:xfDqdhFOvdTvOSf0@cluster0.pqkukyq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
-const JWT_SECRET = 'a9dbe2e4e9b3e44314407f0f155ffe5947aa62f7b6eb447b3ba369edd0fe9757fb99942a55df4b0714d12ff6e66790d0dff0d4a3b25c7fbd3a4d4d8d0df121cb';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback';
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
