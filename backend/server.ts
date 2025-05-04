@@ -51,7 +51,7 @@ app.post('/api/recordings', asyncHandler(async (req: Request, res: Response) => 
 
   let decoded;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET || '') as { userId: string };
+    decoded = jwt.verify(token, process.env.JWT_SECRET || '') as { id: string };
   } catch (err) {
     console.error('❌ Invalid token:', err);
     return res.status(401).json({ error: 'Invalid token' });
@@ -68,7 +68,7 @@ app.post('/api/recordings', asyncHandler(async (req: Request, res: Response) => 
 
   try {
     const recording = new Recording({
-      userId: decoded.userId,
+      userId: decoded.id,
       title,
       audioUrl,
       notes,
@@ -89,8 +89,8 @@ app.get('/api/recordings', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Authentication required' });
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET || '') as { userId: string };
-  const recordings = await Recording.find({ userId: decoded.userId });
+  const decoded = jwt.verify(token, process.env.JWT_SECRET || '') as { id: string };
+  const recordings = await Recording.find({ userId: decoded.id });
 
   res.json(recordings);
 }));
