@@ -1,0 +1,99 @@
+/* Code pour mettre un canvas en tant qu'arriere plan de la page. Source : https://stackoverflow.com/a/38473767 */
+
+html, body { 
+  margin: 0;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+}
+ 
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -9999;
+}
+
+/* Style pour le piano. Source : https://codepen.io/clkent/pen/dQwGqj. Modifié pour cette application. */
+.keyboard-container {
+  width: 960px;
+  height: 300px;
+  margin: 80% auto;
+}
+
+.accidentals-container {
+  width: 960px;
+  display: grid;
+  grid-template-columns: repeat(48, 1fr);
+    height: 66%;
+  justify-items: center;
+}
+
+.accidentals-container button {
+  width: 58px;
+    background: #1b1b1e;
+    border: 1px solid #fff;
+    border-radius: 0 0 4px 4px;
+    cursor: pointer;
+    top: -299px;
+    position: relative;
+    z-index: 1;
+    border-top: none;
+    color: white;
+}
+
+
+.accidentals-container button.C {
+  grid-column: 6 / span 2;
+}
+
+.accidentals-container button.D {
+  grid-column: 12 / span 2;
+}
+
+.accidentals-container button.F {
+  grid-column: 24 / span 2;
+}
+
+.accidentals-container button.G {
+  grid-column: 30 / span 2;
+}
+
+.accidentals-container button.A {
+  grid-column: 36 / span 1;
+}
+
+
+.naturals-container {
+  width: 960px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  height: 300px;
+}
+
+.naturals-container button {
+  background: #fff;
+  border: 1px solid #1b1b1e;
+  border-radius: 0 0 6px 6px;
+}
+
+button {
+      cursor: pointer;
+}
+
+button:active, button:focus {
+    border: 3px solid #9333ea;
+    outline: rgba(225, 225, 225, 0);
+  }
+
+.naturals-container p {
+  font-size: 1.75em;
+      top: 100px;
+    position: relative;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, .9), 0 -1px 1px rgba(0, 0, 0, .1);
+  color: #1b1b1e;
+}
+  

@@ -1,3 +1,4 @@
+# .renderignore
 src/pages/
 src/components/
 index.html

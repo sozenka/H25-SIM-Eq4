@@ -1,63 +1,81 @@
-import { create } from 'zustand';
-import * as Tone from 'tone';
-import Meyda from 'meyda';
-import { createClient } from '@supabase/supabase-js';
-import { PitchDetector } from 'pitchy';
-
-// Create a single instance of the Supabase client
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { create } from 'zustand'
+import * as Tone from 'tone'
 
 export interface Recording {
-  id: string;
-  userId: string;
-  name: string;
-  notes: Array<{ note: string; time: number }>;
-  duration: string;
-  createdAt: string;
-  audioUrl: string;
+  id: string
+  userId: string
+  name: string
+  notes: Array<{ note: string; time: number }>
+  duration: string
+  createdAt: string
+  audioData?: ArrayBuffer | string // Allow both ArrayBuffer and Base64 string
 }
 
 interface MusicState {
-  instrument: Tone.PolySynth | null;
-  recording: boolean;
-  playing: boolean;
-  currentScale: string;
-  currentOctave: number;
-  recordings: Recording[];
-  recordingNotes: Array<{ note: string; time: number }>;
-  currentRecordingStartTime: number | null;
-  recordingAudioData: ArrayBuffer | null;
-  user: { id: string; email: string } | null;
-  recorder: Tone.Recorder | null;
-  initializeInstrument: () => Promise<void>;
-  playNote: (note: string) => void;
-  stopNote: (note: string) => void;
-  startRecording: () => Promise<void>;
-  stopRecording: () => Promise<Recording | undefined>;
-  addRecording: (recording: Recording) => void;
-  setScale: (scale: string) => void;
-  setOctave: (octave: number) => void;
-  loadRecordings: () => Promise<void>;
-  playRecording: (recording: Recording) => void;
+  instrument: Tone.PolySynth | null
+  recording: boolean
+  playing: boolean
+  currentScale: string
+  currentOctave: number
+  recordings: Recording[]
+  recordingNotes: Array<{ note: string; time: number }>
+  currentRecordingStartTime: number | null
+  recordingAudioData: ArrayBuffer | null
+  user: { id: string; email: string } | null
+  pianoRoll: string[][]
+  currentColumn: number
+  initializeInstrument: () => Promise<void>
+  playNote: (note: string) => void
+  stopNote: (note: string) => void
+  setPlaying: (playing: boolean) => void
+  setCurrentColumn: (column: number) => void
+  startRecording: () => void
+  stopRecording: () => Promise<Recording | undefined>
+  addRecording: (recording: Recording) => void
+  setScale: (scale: string) => void
+  setOctave: (octave: number) => void
+  loadRecordings: () => Promise<void>
+  setUser: (user: { id: string; email: string } | null) => void
+  playRecording: (recording: Recording) => void
+  togglePlayback: () => void
   analyzeAudio: (audioData: ArrayBuffer) => Promise<{
-    scale: string;
-    chords: string[];
-    tempo: number;
-  }>;
-  deleteRecording: (recordingId: string) => void;
-  updateRecordingName: (recordingId: string, newName: string) => void;
-  handleRecordingToggle: () => Promise<void>;
-  set: (fn: (state: MusicState) => Partial<MusicState>) => void;
-  playPianoRoll: (notes: Array<{ note: string; time: number }>) => Promise<void>;
+    scale: string
+    chords: string[]
+    tempo: number
+  }>
+  deleteRecording: (recordingId: string) => void
+  updateRecordingName: (recordingId: string, newName: string) => void
 }
 
+// Helper functions for Base64 encoding/decoding
+const bufferToBase64 = (buffer: ArrayBuffer): string => {
+  return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+};
+
+const base64ToBuffer = (base64: string): ArrayBuffer => {
+  const binary = atob(base64);
+  const len = binary.length;
+  const buffer = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    buffer[i] = binary.charCodeAt(i);
+  }
+  return buffer.buffer;
+};
+
+// Type guard for ArrayBuffer
+const isArrayBuffer = (data: unknown): data is ArrayBuffer => {
+  return data instanceof ArrayBuffer;
+};
+
+// Type guard for Base64 string
+const isBase64String = (data: unknown): data is string => {
+  return typeof data === 'string' && /^[A-Za-z0-9+/=]+$/.test(data);
+};
+
+// Initialize AudioContext lazily
 let audioContext: AudioContext | null = null;
-let recorder: Tone.Recorder | null = null;
-let recordingChunks: BlobPart[] = [];
-let analyzerNode: AnalyserNode | null = null;
+let destination: MediaStreamAudioDestinationNode | null = null;
+let mediaRecorder: MediaRecorder | null = null;
 
 const getAudioContext = () => {
   if (!audioContext) {
@@ -66,116 +84,100 @@ const getAudioContext = () => {
   return audioContext;
 };
 
-const setupRecorder = async () => {
+const getDestination = () => {
+  if (!destination) {
+    destination = getAudioContext().createMediaStreamDestination();
+  }
+  return destination;
+};
+
+const getMediaRecorder = () => {
+  if (!mediaRecorder) {
+    // Get supported MIME type
+    const supportedTypes = ['audio/wav', 'audio/ogg;codecs=opus', 'audio/webm'];
+    const mimeType = supportedTypes.find(type => MediaRecorder.isTypeSupported(type)) || 'audio/webm';
+    
+    mediaRecorder = new MediaRecorder(getDestination().stream, {
+      mimeType,
+      audioBitsPerSecond: 128000
+    });
+  }
+  return mediaRecorder;
+};
+
+let chunks: BlobPart[] = [];
+
+getMediaRecorder().ondataavailable = (e: BlobEvent) => {
+  chunks.push(e.data);
+};
+
+let resolveRecordingPromise: ((rec: Recording | undefined) => void) | null = null;
+let currentPlayback: Tone.Part | null = null;
+
+getMediaRecorder().onstop = async () => {
   try {
-    if (recorder) {
-      return recorder;
+    const blob = new Blob(chunks, { type: 'audio/wav' });
+    const arrayBuffer = await blob.arrayBuffer();
+    const { recordingNotes, currentRecordingStartTime, recordings, user } = useMusicStore.getState();
+
+    if (!user || !currentRecordingStartTime) {
+      resolveRecordingPromise?.(undefined);
+      return;
     }
-    
-    const ctx = getAudioContext();
-    if (ctx.state === 'suspended') {
-      await ctx.resume();
-    }
-    
-    recorder = new Tone.Recorder();
-    Tone.Destination.connect(recorder);
-    return recorder;
+
+    const durationSeconds = ((Date.now() - currentRecordingStartTime) / 1000).toFixed(2);
+
+    // Create a copy of the audio data to avoid detached ArrayBuffer issues
+    const audioDataCopy = new Uint8Array(arrayBuffer).slice().buffer;
+
+    const newRecording: Recording = {
+      id: crypto.randomUUID(),
+      userId: user.id,
+      name: `Composition ${recordings.length + 1}`,
+      notes: recordingNotes,
+      duration: `${durationSeconds}s`,
+      createdAt: new Date().toISOString(),
+      audioData: bufferToBase64(audioDataCopy), // Store as Base64
+    };
+
+    useMusicStore.setState((state) => ({
+      recordings: [...state.recordings, newRecording],
+      recording: false,
+      recordingNotes: [],
+      recordingAudioData: audioDataCopy,
+      currentRecordingStartTime: null,
+    }));
+
+    resolveRecordingPromise?.(newRecording);
+    resolveRecordingPromise = null;
+    chunks = [];
   } catch (error) {
-    console.error('Error setting up recorder:', error);
-    throw error;
+    console.error('Error processing recording:', error);
+    resolveRecordingPromise?.(undefined);
+    resolveRecordingPromise = null;
+    chunks = [];
   }
 };
 
-const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
-  const binary = new Uint8Array(buffer);
-  const bytes = Array.from(binary).map(byte => String.fromCharCode(byte));
-  return btoa(bytes.join(''));
+// Store recordings in localStorage
+const STORAGE_KEY = 'harmonia_recordings';
+
+const loadFromStorage = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (error) {
+    console.error('Error loading from storage:', error);
+    return {};
+  }
 };
 
-const detectChords = (frequencies: Float32Array, sampleRate: number): string[] => {
-  const noteFrequencies = {
-    'C': 261.63, 'C#': 277.18, 'D': 293.66, 'D#': 311.13,
-    'E': 329.63, 'F': 349.23, 'F#': 369.99, 'G': 392.00,
-    'G#': 415.30, 'A': 440.00, 'A#': 466.16, 'B': 493.88
-  };
-
-  const chords: { [key: string]: number[] } = {
-    'CMaj': [261.63, 329.63, 392.00],
-    'GMaj': [392.00, 493.88, 587.33],
-    'DMaj': [293.66, 369.99, 440.00],
-    'Am': [440.00, 523.25, 659.25],
-    'Em': [329.63, 392.00, 493.88],
-    'FMaj': [349.23, 440.00, 523.25]
-  };
-
-  const detectedChords: string[] = [];
-  const binSize = sampleRate / frequencies.length;
-
-  for (const [chordName, chordFreqs] of Object.entries(chords)) {
-    let matches = 0;
-    for (const freq of chordFreqs) {
-      const bin = Math.round(freq / binSize);
-      if (frequencies[bin] > -60) { // Threshold for frequency detection
-        matches++;
-      }
-    }
-    if (matches >= 2) { // At least 2 matching frequencies for a chord
-      detectedChords.push(chordName);
-    }
+const saveToStorage = (data: any) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.error('Error saving to storage:', error);
   }
-
-  return detectedChords.length > 0 ? detectedChords : ['Unknown'];
-};
-
-const detectTempo = async (audioBuffer: AudioBuffer): Promise<number> => {
-  const ctx = getAudioContext();
-  const source = ctx.createBufferSource();
-  source.buffer = audioBuffer;
-  
-  const analyzer = ctx.createAnalyser();
-  analyzer.fftSize = 2048;
-  source.connect(analyzer);
-  
-  const bufferLength = analyzer.frequencyBinCount;
-  const dataArray = new Float32Array(bufferLength);
-  analyzer.getFloatFrequencyData(dataArray);
-  
-  // Simple tempo detection based on RMS values
-  const rmsValues: number[] = [];
-  const sampleLength = Math.floor(audioBuffer.length / 512);
-  
-  for (let i = 0; i < sampleLength; i++) {
-    const start = i * 512;
-    const end = Math.min(start + 512, audioBuffer.length);
-    let sum = 0;
-    
-    for (let j = start; j < end; j++) {
-      const sample = audioBuffer.getChannelData(0)[j];
-      sum += sample * sample;
-    }
-    
-    rmsValues.push(Math.sqrt(sum / (end - start)));
-  }
-  
-  // Find peaks in RMS values to estimate tempo
-  const peaks: number[] = [];
-  for (let i = 1; i < rmsValues.length - 1; i++) {
-    if (rmsValues[i] > rmsValues[i - 1] && rmsValues[i] > rmsValues[i + 1]) {
-      peaks.push(i);
-    }
-  }
-  
-  // Calculate average time between peaks
-  const avgTimeBetweenPeaks = peaks.length > 1 
-    ? (peaks[peaks.length - 1] - peaks[0]) / (peaks.length - 1) 
-    : 0;
-  
-  // Convert to BPM
-  const bpm = avgTimeBetweenPeaks > 0 
-    ? Math.round(60 / (avgTimeBetweenPeaks * 512 / audioBuffer.sampleRate))
-    : 120; // Default fallback
-  
-  return Math.min(Math.max(bpm, 60), 200); // Clamp between 60-200 BPM
 };
 
 export const useMusicStore = create<MusicState>((set, get) => ({
@@ -188,39 +190,33 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   recordingNotes: [],
   currentRecordingStartTime: null,
   recordingAudioData: null,
-  user: null,
-  recorder: null,
+  user: { id: 'default-user', email: 'test@harmonia.app' },
+  pianoRoll: Array(48).fill(null).map(() => Array(100).fill('')),
+  currentColumn: 0,
 
   initializeInstrument: async () => {
     try {
-      // Start Tone.js and ensure audio context is running
-      await Tone.start();
+      // Get or create AudioContext first
       const ctx = getAudioContext();
+      
+      // Resume AudioContext if it's suspended
       if (ctx.state === 'suspended') {
         await ctx.resume();
       }
       
-      // Configure the synth with proper voice management
+      // Start Tone.js after AudioContext is ready
+      await Tone.start();
+      
+      // Initialize synth
       const synth = new Tone.PolySynth(Tone.Synth, {
-        volume: -10,
-        envelope: {
-          attack: 0.005,
-          decay: 0.1,
-          sustain: 0.3,
-          release: 1
-        },
-        oscillator: {
-          type: "sine"
-        }
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 1 },
       }).toDestination();
       
-      // Set the maximum number of voices and voice stealing
-      synth.maxPolyphony = 32;
-      synth.voiceStealing = true;
-      
+      synth.volume.value = -10;
       set({ instrument: synth });
     } catch (error) {
-      console.error('Failed to initialize instrument:', error);
+      console.error('Error initializing instrument:', error);
       throw error;
     }
   },
@@ -229,373 +225,269 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const { instrument, recording, currentRecordingStartTime } = get();
     if (!instrument) return;
 
-    const now = Tone.now();
-    // Use triggerAttackRelease with proper timing
-    instrument.triggerAttackRelease(note, '8n', now);
-    
-    if (recording && currentRecordingStartTime) {
-      const time = (Date.now() - currentRecordingStartTime) / 1000;
-      set((state) => ({
-        recordingNotes: [...state.recordingNotes, { note, time }]
-      }));
-    }
+    // Use setTimeout to avoid state updates during render
+    setTimeout(() => {
+      instrument.triggerAttackRelease(note, '8n');
+      
+      if (recording && currentRecordingStartTime) {
+        const time = (Date.now() - currentRecordingStartTime) / 1000;
+        set((state) => ({
+          recordingNotes: [...state.recordingNotes, { note, time }],
+        }));
+      }
+    }, 0);
   },
 
-  stopNote: (note: string) => {
-    const { instrument } = get();
-    if (!instrument) return;
-    instrument.triggerRelease(note);
-  },
+  startRecording: () => {
+    const { recording, playing } = get()
+    if (recording) return
 
-  startRecording: async () => {
-    try {
-      if (get().recording) {
-        console.log('Recording already in progress');
-        return;
-      }
-
-      // Check if user is authenticated using local storage
-      const userStr = localStorage.getItem('user');
-      if (!userStr) {
-        console.error('No authenticated user');
-        throw new Error('User must be authenticated to record');
-      }
-
-      const user = JSON.parse(userStr);
-      set({ user: { id: user.id, email: user.email || '' } });
-
-      console.log('Starting recording...');
-      await Tone.start();
-      
-      // Initialize recorder if not already done
-      const recorder = new Tone.Recorder();
-      Tone.Destination.connect(recorder);
-      
-      // Start recording
-      recorder.start();
-      
-      set((state) => ({
-        recording: true,
-        recorder,
-        recordingNotes: [],
-        currentRecordingStartTime: Date.now()
-      }));
-      console.log('Recording started successfully');
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      throw error;
-    }
+    chunks = []
+    getMediaRecorder().start()
+    set({
+      recording: true,
+      recordingNotes: [],
+      currentRecordingStartTime: Date.now(),
+    })
   },
 
   stopRecording: async () => {
-    const { recorder, recordingNotes, currentRecordingStartTime } = get();
-    if (!recorder) {
-      console.error('No recorder instance found');
-      return undefined;
-    }
+    return new Promise<Recording | undefined>((resolve) => {
+      const { recording } = get()
+      if (!recording) return resolve(undefined)
+      resolveRecordingPromise = resolve
+      getMediaRecorder().stop()
+    })
+  },
 
-    try {
-      console.log('Stopping recording with notes:', recordingNotes);
-      const blob = await recorder.stop();
-      console.log('Recording stopped, processing blob...');
-
-      // Get authentication token
-      const token = localStorage.getItem('token');
-      const user = localStorage.getItem('user');
-      console.log('Auth state during save:', { token, user });
-
-      if (!token || !user) {
-        throw new Error('No authentication token or user data found');
-      }
-
-      const userData = JSON.parse(user);
-      console.log('User data:', userData);
-
-      // Convert blob to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = async () => {
-        const base64Audio = reader.result as string;
-        console.log('Audio data length:', base64Audio.length);
-
-        try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              audio: base64Audio,
-              notes: recordingNotes,
-              userId: userData.id,
-              title: `Recording ${new Date().toISOString()}`
-            })
-          });
-
-          console.log('Save response status:', response.status);
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Save error details:', errorData);
-            throw new Error('Failed to save recording');
-          }
-
-          const data = await response.json();
-          console.log('Save successful:', data);
-          set((state) => ({
-            recording: false,
-            recorder: null,
-            recordingNotes: []
-          }));
-          return data;
-        } catch (error) {
-          console.error('Error saving recording:', error);
-          throw error;
-        }
-      };
-    } catch (error) {
-      console.error('Error stopping recording:', error);
-      set((state) => ({
-        recording: false,
-        recorder: null,
-        recordingNotes: []
+  loadRecordings: async () => {
+    const { user } = get();
+    if (!user) return;
+    
+    const storedData = loadFromStorage();
+    // Only load recordings for the current user
+    const userRecordings = storedData[user.id] || [];
+    
+    // Convert Base64 audio data back to ArrayBuffer
+    const recordings = userRecordings
+      .filter((recording: Recording) => recording.userId === user.id)
+      .map((recording: Recording) => ({
+        ...recording,
+        audioData: recording.audioData && isBase64String(recording.audioData)
+          ? base64ToBuffer(recording.audioData)
+          : recording.audioData,
       }));
-      throw error;
-    }
+    
+    set({ recordings });
   },
 
   addRecording: (recording: Recording) => {
-    set((state) => ({
-      recordings: [...state.recordings, recording]
-    }));
-  },
+    set((state) => {
+      const { user } = state;
+      if (!user) return state;
 
-  deleteRecording: async (recordingId: string) => {
-    try {
-      // First, get the recording to check if it has an audio file
-      const recording = get().recordings.find(r => r.id === recordingId);
-      if (!recording) return;
-
-      // If there's an audio file, delete it from storage
-      if (recording.audioUrl) {
-        const audioPath = recording.audioUrl.split('/').pop();
-        if (audioPath) {
-          const { error: storageError } = await supabase.storage
-            .from('recordings')
-            .remove([audioPath]);
-          
-          if (storageError) throw storageError;
-        }
-      }
-
-      // Delete the recording record from Supabase
-      const { error } = await supabase
-        .from('recordings')
-        .delete()
-        .eq('id', recordingId);
-
-      if (error) throw error;
-
-      // Update local state
-      set(state => ({
-        recordings: state.recordings.filter(r => r.id !== recordingId)
-      }));
-    } catch (error) {
-      console.error('Error deleting recording:', error);
-      throw error;
-    }
-  },
-
-  updateRecordingName: async (recordingId: string, newName: string) => {
-    try {
-      const { error } = await supabase
-        .from('recordings')
-        .update({ name: newName })
-        .eq('id', recordingId);
-
-      if (error) throw error;
-
-      set(state => ({
-        recordings: state.recordings.map(r =>
-          r.id === recordingId ? { ...r, name: newName } : r
-        )
-      }));
-    } catch (error) {
-      console.error('Error updating recording name:', error);
-      throw error;
-    }
-  },
-
-  setScale: (scale) => set({ currentScale: scale }),
-  setOctave: (octave) => set({ currentOctave: octave }),
-  
-  loadRecordings: async () => {
-    try {
-      // Get the token from localStorage
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.log('No authentication token found');
-        return;
-      }
-
-      // Fetch recordings from backend
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load recordings');
-      }
-
-      const data = await response.json();
-      set({ recordings: data });
-    } catch (error) {
-      console.error('Error loading recordings:', error);
-    }
-  },
-
-  playRecording: async (recording: Recording) => {
-    const { instrument } = get();
-    if (!instrument || !recording.audioUrl) return;
-    
-    try {
-      // Fetch the audio file from the URL
-      const response = await fetch(recording.audioUrl);
-      const arrayBuffer = await response.arrayBuffer();
+      const storedData = loadFromStorage();
+      const userRecordings = storedData[user.id] || [];
       
-      const audioContext = getAudioContext();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-      source.start();
+      // Ensure the recording belongs to the current user
+      if (recording.userId !== user.id) return state;
       
-      set({ playing: true });
-      source.onended = () => set({ playing: false });
-    } catch (error) {
-      console.error('Error playing recording:', error);
+      // Convert audio data to Base64 before saving
+      const recordingToSave = {
+        ...recording,
+        audioData: recording.audioData && isArrayBuffer(recording.audioData)
+          ? bufferToBase64(recording.audioData)
+          : recording.audioData,
+      };
+      
+      // Check if recording with same ID already exists
+      const existingIndex = userRecordings.findIndex((r: Recording) => r.id === recording.id);
+      if (existingIndex !== -1) {
+        // Update existing recording
+        userRecordings[existingIndex] = recordingToSave;
+      } else {
+        // Add new recording
+        userRecordings.push(recordingToSave);
+      }
+
+      // Save to storage
+      storedData[user.id] = userRecordings;
+      saveToStorage(storedData);
+
+      return { recordings: userRecordings };
+    });
+  },
+
+  deleteRecording: (recordingId: string) => {
+    set((state) => {
+      const { user } = state;
+      if (!user) return state;
+
+      const storedData = loadFromStorage();
+      const userRecordings = storedData[user.id] || [];
+      
+      // Remove recording
+      const updatedRecordings = userRecordings.filter((r: Recording) => r.id !== recordingId);
+      
+      // Save to storage
+      storedData[user.id] = updatedRecordings;
+      saveToStorage(storedData);
+
+      return { recordings: updatedRecordings };
+    });
+  },
+
+  updateRecordingName: (recordingId: string, newName: string) => {
+    set((state) => {
+      const { user } = state;
+      if (!user) return state;
+
+      const storedData = loadFromStorage();
+      const userRecordings = storedData[user.id] || [];
+      
+      // Update recording name
+      const updatedRecordings = userRecordings.map((r: Recording) => 
+        r.id === recordingId ? { ...r, name: newName } : r
+      );
+      
+      // Save to storage
+      storedData[user.id] = updatedRecordings;
+      saveToStorage(storedData);
+
+      return { recordings: updatedRecordings };
+    });
+  },
+
+  setScale: (scale) => {
+    set({ currentScale: scale })
+    const { instrument } = get()
+    if (instrument) instrument.releaseAll()
+  },
+
+  setOctave: (octave) => {
+    if (octave >= 0 && octave <= 8) {
+      set({ currentOctave: octave })
+    }
+  },
+
+  setUser: (user) => {
+    set({ user })
+    if (user) get().loadRecordings()
+    else set({ recordings: [] })
+  },
+
+  playRecording: (recording: Recording) => {
+    const { instrument, user } = get();
+    if (!instrument || !user) {
+      console.error('Instrument not initialized or user not logged in');
+      return;
+    }
+
+    // Ensure the recording belongs to the current user
+    if (recording.userId !== user.id) {
+      console.error('Recording does not belong to current user');
+      return;
+    }
+
+    // Stop any existing playback
+    if (currentPlayback) {
+      currentPlayback.stop();
+      currentPlayback = null;
+    }
+
+    // Play the notes
+    const startTime = Tone.now();
+    recording.notes.forEach(({ note, time }) => {
+      instrument.triggerAttackRelease(note, '8n', startTime + time);
+    });
+
+    set({ playing: true });
+
+    // Set a timeout to stop playback after the last note
+    const lastNoteTime = Math.max(...recording.notes.map(({ time }) => time));
+    setTimeout(() => {
+      set({ playing: false });
+    }, lastNoteTime * 1000);
+  },
+
+  togglePlayback: () => {
+    const { playing, instrument } = get()
+    if (!instrument) return
+
+    if (playing) {
+      if (currentPlayback) {
+        currentPlayback.stop()
+        currentPlayback = null
+      }
+      instrument.releaseAll()
+      set({ playing: false })
+    } else {
+      set({ playing: true })
     }
   },
 
   analyzeAudio: async (audioData: ArrayBuffer) => {
     const ctx = getAudioContext();
     const audioBuffer = await ctx.decodeAudioData(audioData);
-    
-    const analyzer = ctx.createAnalyser();
-    analyzer.fftSize = 2048;
-    
+    const analyser = ctx.createAnalyser();
     const source = ctx.createBufferSource();
     source.buffer = audioBuffer;
-    source.connect(analyzer);
-    
-    const bufferLength = analyzer.frequencyBinCount;
-    const dataArray = new Float32Array(bufferLength);
-    analyzer.getFloatFrequencyData(dataArray);
+    source.connect(analyser);
 
-    // Pitch detection
-    const detector = PitchDetector.forFloat32Array(bufferLength);
-    const pitch = detector.findPitch(dataArray, ctx.sampleRate);
-    
-    // Scale detection based on pitch
-    const scale = pitch ? pitch[0].toFixed(2) : 'Unknown';
-    
-    // Chord detection
-    const chords = detectChords(dataArray, ctx.sampleRate);
-    
-    // Tempo detection
-    const tempo = await detectTempo(audioBuffer);
+    const frequencyData = new Float32Array(analyser.frequencyBinCount)
+    analyser.getFloatFrequencyData(frequencyData)
+
+    const dominantFrequencies = Array.from(frequencyData)
+      .map((value, index) => ({ value, index }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 3)
+
+    const noteFrequencies: { [key: string]: number } = {
+      C: 261.63, 'C#': 277.18, D: 293.66, 'D#': 311.13, E: 329.63,
+      F: 349.23, 'F#': 369.99, G: 392.0, 'G#': 415.3, A: 440.0, 'A#': 466.16, B: 493.88,
+    }
+
+    const detectedNotes = dominantFrequencies.map((freq) => {
+      const hz = (freq.index * ctx.sampleRate) / analyser.frequencyBinCount;
+      return Object.entries(noteFrequencies).reduce(
+        (closest: string, [note, noteHz]) =>
+          Math.abs(hz - noteHz) < Math.abs(hz - noteFrequencies[closest]) ? note : closest,
+        'C'
+      );
+    });
+
+    const chords = [
+      `${detectedNotes[0]}Maj7`,
+      `${detectedNotes[1]}m7`,
+      `${detectedNotes[2]}7`,
+    ]
+
+    const peaks = []
+    const threshold = Math.max(...frequencyData) * 0.75
+    for (let i = 1; i < frequencyData.length - 1; i++) {
+      if (
+        frequencyData[i] > threshold &&
+        frequencyData[i] > frequencyData[i - 1] &&
+        frequencyData[i] > frequencyData[i + 1]
+      ) {
+        peaks.push(i)
+      }
+    }
+
+    const tempo = Math.round((peaks.length * 60) / audioBuffer.duration)
 
     return {
-      scale,
+      scale: detectedNotes[0],
       chords,
-      tempo
-    };
-  },
-
-  handleRecordingToggle: async () => {
-    const { recording } = get();
-    console.log('Toggling recording state:', recording);
-    
-    if (recording) {
-      try {
-        console.log('Attempting to stop recording...');
-        const data = await get().stopRecording();
-        if (data) {
-          console.log('Recording stopped successfully');
-          set((state) => ({
-            recording: false,
-            recordingNotes: [],
-            currentRecordingStartTime: null
-          }));
-          // Reload recordings to show the new one
-          await get().loadRecordings();
-        } else {
-          console.log('No recording data returned');
-        }
-      } catch (error) {
-        console.error('Error stopping recording:', error);
-        throw error;
-      }
-    } else {
-      try {
-        console.log('Starting new recording...');
-        await get().startRecording();
-        set((state) => ({
-          recording: true,
-          recordingNotes: [],
-          currentRecordingStartTime: Date.now()
-        }));
-      } catch (error) {
-        console.error('Error starting recording:', error);
-        throw error;
-      }
+      tempo: Math.min(Math.max(tempo, 60), 200),
     }
   },
 
-  playPianoRoll: async (notes: Array<{ note: string; time: number }>) => {
-    try {
-      // Ensure Tone.js and audio context are running
-      await Tone.start();
-      const ctx = getAudioContext();
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
-      }
-
-      // Clear any existing scheduled events
-      Tone.Transport.cancel();
-
-      // Play each note at its scheduled time
-      notes.forEach(({ note, time }) => {
-        Tone.Transport.scheduleOnce(() => {
-          get().playNote(note);
-        }, time);
-      });
-
-      // Start the transport
-      Tone.Transport.start();
-
-      // If recording is enabled, stop recording when playback ends
-      if (get().recording) {
-        const duration = Math.max(...notes.map(n => n.time)) + 1;
-        Tone.Transport.scheduleOnce(async () => {
-          const data = await get().stopRecording();
-          if (data) {
-            set((state) => ({
-              recording: false,
-              recordingNotes: [],
-              currentRecordingStartTime: null
-            }));
-            await get().loadRecordings();
-          }
-        }, duration);
-      }
-    } catch (error) {
-      console.error('Error playing piano roll:', error);
-      throw error;
-    }
+  setPlaying: (playing: boolean) => set({ playing }),
+  setCurrentColumn: (column: number) => set({ currentColumn: column }),
+  stopNote: (note: string) => {
+    const { instrument } = get()
+    if (!instrument) return
+    instrument.triggerRelease(note)
   },
-
-  set
-}));
+}))

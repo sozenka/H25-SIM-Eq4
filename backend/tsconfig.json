@@ -8,6 +8,6 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["server.ts", "src/lib/api/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["backend/server.ts", "src/lib/api/**/*.ts", "src/lib/mongodb/**/*.ts"],
+  "exclude": ["src/pages", "src/components", "vite.config.ts", "index.html"]
 }
