@@ -1,5 +1,6 @@
 {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   "name": "harmonia",
   "private": true,
   "version": "0.0.0",
@@ -62,8 +63,13 @@
   }
 }
 =======
+=======
+>>>>>>> Stashed changes
   "dependencies": {
     "serverless-http": "^3.2.0"
   }
 }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
