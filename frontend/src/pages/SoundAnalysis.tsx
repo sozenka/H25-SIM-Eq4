@@ -3,12 +3,12 @@ import { Upload, Link, Music, Play, Pause, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AudioVisualizer from '../components/AudioVisualizer'
 import { useMusicStore } from '../store/musicStore'
+import type { Recording } from '../store/musicStore'
 
 const SoundAnalysis = () => {
   const { currentScale, recordings, analyzeAudio } = useMusicStore()
   const [audioUrl, setAudioUrl] = useState<string>('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
-  const [youtubeUrl, setYoutubeUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -41,49 +41,28 @@ const SoundAnalysis = () => {
     }
   }
 
-  const handleYoutubeUrl = async () => {
-    if (!youtubeUrl) {
-      setError('Please enter a YouTube URL')
-      return
-    }
-
-    setIsLoading(true)
+  const handleRecordingSelect = async (recording: Recording) => {
+    if (!recording.audioUrl) return;
+  
     try {
-      const response = await fetch('/api/youtube/audio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: youtubeUrl })
-      })
-
-      if (!response.ok) throw new Error('Failed to process YouTube URL')
-
-      const blob = await response.blob()
-      setAudioUrl(URL.createObjectURL(blob))
-      
-      // Analyze the YouTube audio
-      const arrayBuffer = await blob.arrayBuffer()
-      const result = await analyzeAudio(arrayBuffer)
-      setAnalysis(result)
-      setError('')
+      const response = await fetch(recording.audioUrl);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+  
+      setAudioUrl(URL.createObjectURL(blob));
+      const result = await analyzeAudio(arrayBuffer);
+      setAnalysis(result);
+      setError('');
     } catch (err) {
-      setError('Failed to process YouTube URL. Please try again.')
-    } finally {
-      setIsLoading(false)
+      console.error('Error analyzing recording:', err);
+      setError('Failed to analyze selected recording');
     }
-  }
-
-  const handleRecordingSelect = async (recording: any) => {
-    if (recording.audioData) {
-      setAudioUrl(URL.createObjectURL(new Blob([recording.audioData])))
-      const result = await analyzeAudio(recording.audioData)
-      setAnalysis(result)
-    }
-  }
+  };
+  
 
   const clearAudio = () => {
     setAudioUrl('')
     setAudioFile(null)
-    setYoutubeUrl('')
     setAnalysis(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -117,30 +96,6 @@ const SoundAnalysis = () => {
                   <span className="text-purple-200">Cliquez pour choisir un fichier audio</span>
                 </div>
               </label>
-            </div>
-          </div>
-
-          {/* YouTube URL Section */}
-          <div className="bg-black/20 p-6 rounded-lg border border-purple-500/20">
-            <h3 className="text-xl font-semibold text-white mb-4">Lien YouTube</h3>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={youtubeUrl}
-                  onChange={(e) => setYoutubeUrl(e.target.value)}
-                  placeholder="Collez le lien YouTube ici"
-                  className="flex-1 bg-black/20 border border-purple-500/20 rounded-lg px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500/50 focus:ring focus:ring-purple-500/20 transition-all"
-                />
-                <button
-                  onClick={handleYoutubeUrl}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <Link className="w-4 h-4" />
-                  {isLoading ? 'Chargement...' : 'Analyser'}
-                </button>
-              </div>
             </div>
           </div>
 

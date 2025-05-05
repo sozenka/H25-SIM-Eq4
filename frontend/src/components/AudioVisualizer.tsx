@@ -4,7 +4,7 @@ import { Play, Pause, RotateCcw } from 'lucide-react'
 
 interface AudioVisualizerProps {
   audioUrl?: string
-  audioData?: Blob
+  audioData?: Blob | ArrayBuffer
 }
 
 const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioUrl, audioData }) => {
@@ -57,13 +57,16 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioUrl, audioData }
     if (audioUrl) {
       wavesurferRef.current.load(audioUrl)
     } else if (audioData) {
-      wavesurferRef.current.loadBlob(audioData)
+      const blob = audioData instanceof Blob
+        ? audioData
+        : new Blob([audioData], { type: 'audio/wav' }) // or 'audio/webm' depending on your setup
+      wavesurferRef.current.loadBlob(blob)
     }
   }, [audioUrl, audioData])
 
   const togglePlayPause = () => {
     if (!wavesurferRef.current) return
-    
+
     if (isPlaying) {
       wavesurferRef.current.pause()
     } else {
@@ -108,7 +111,7 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ audioUrl, audioData }
           {formatTime(currentTime)} / {formatTime(duration)}
         </div>
       </div>
-      
+
       <div ref={containerRef} className="w-full" />
     </div>
   )

@@ -19,6 +19,7 @@ export interface Recording {
   duration: string;
   createdAt: string;
   audioUrl: string;
+  audioData?: ArrayBuffer;
 }
 
 interface MusicState {
@@ -192,25 +193,25 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   user: null,
   recorder: null,
 
- initializeInstrument: async () => {
+  initializeInstrument: async () => {
     try {
       // Get or create AudioContext first
       const ctx = getAudioContext();
-      
+
       // Resume AudioContext if it's suspended
       if (ctx.state === 'suspended') {
         await ctx.resume();
       }
-      
+
       // Start Tone.js after AudioContext is ready
       await Tone.start();
-      
+
       // Initialize synth
       const synth = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'sine' },
         envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 1 },
       }).toDestination();
-      
+
       synth.volume.value = -10;
       set({ instrument: synth });
     } catch (error) {
@@ -359,13 +360,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       }));
 
       return {
-        id: dataResponse.recordingId, // extract correct field
+        id: dataResponse.recordingId,
         userId: user.id,
         name: `Recording ${new Date().toISOString()}`,
         notes: recordingNotes,
         duration,
         createdAt: new Date().toISOString(),
-        audioUrl
+        audioUrl,
+        audioData: audioBuffer // ✅ Add this line!
       };
 
       audioData: audioBuffer
@@ -393,14 +395,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         console.error('❌ Invalid recordingId provided to deleteRecording:', recordingId);
         return;
       }
-  
+
       // Find the recording in local state
       const recording = get().recordings.find(r => r.id === recordingId);
       if (!recording) {
         console.error('❌ Recording not found in local state for ID:', recordingId);
         return;
       }
-  
+
       // Delete file from Supabase Storage
       if (recording.audioUrl) {
         const parts = recording.audioUrl.split('/recordings/');
@@ -412,47 +414,47 @@ export const useMusicStore = create<MusicState>((set, get) => ({
             .storage
             .from('recordings')
             .remove([path]);
-  
+
           if (storageError) {
             console.error('❌ Supabase delete error:', storageError);
             throw storageError;
           }
         }
       }
-  
+
       // Delete metadata from MongoDB via backend
       const token = localStorage.getItem('token');
       if (!token) throw new Error('❌ No auth token');
-  
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings/${recordingId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-  
+
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.message || '❌ Failed to delete recording from database');
       }
-  
+
       // Update Zustand state
       set(state => ({
         recordings: state.recordings.filter(r => r.id !== recordingId)
       }));
-  
+
       console.log('✅ Recording deleted successfully:', recordingId);
     } catch (error) {
       console.error('❌ Error deleting recording:', error);
       throw error;
     }
-  },  
+  },
 
   updateRecordingName: async (recordingId: string, newName: string) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No auth token');
-  
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings/${recordingId}`, {
         method: 'PATCH',
         headers: {
@@ -461,54 +463,69 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         },
         body: JSON.stringify({ name: newName })
       });
-  
+
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.message || 'Failed to rename recording');
       }
-  
+
       const updated = await response.json();
       set(state => ({
         recordings: state.recordings.map(r =>
           r.id === recordingId ? { ...r, name: newName } : r
         )
       }));
-  
+
       console.log('✅ Renamed recording:', updated);
     } catch (err) {
       console.error('❌ Rename failed:', err);
     }
-  },  
+  },
 
   setScale: (scale) => set({ currentScale: scale }),
   setOctave: (octave) => set({ currentOctave: octave }),
 
   loadRecordings: async () => {
     try {
-      // Get the token from localStorage
       const token = localStorage.getItem('token');
       if (!token) {
         console.log('No authentication token found');
         return;
       }
-
-      // Fetch recordings from backend
+  
+      // Fetch recordings metadata from backend
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to load recordings');
       }
-
+  
       const data = await response.json();
-      set({ recordings: data });
+  
+      // Fetch audio blobs and convert to ArrayBuffer
+      const enriched = await Promise.all(
+        data.map(async (recording: any) => {
+          try {
+            const res = await fetch(recording.audioUrl);
+            const blob = await res.blob();
+            const arrayBuffer = await blob.arrayBuffer();
+            return { ...recording, audioData: arrayBuffer };
+          } catch (err) {
+            console.error(`⚠️ Failed to fetch audio for recording "${recording.name}":`, err);
+            return recording; // fallback without audioData
+          }
+        })
+      );
+  
+      set({ recordings: enriched });
     } catch (error) {
-      console.error('Error loading recordings:', error);
+      console.error('❌ Error loading recordings:', error);
     }
-  },
+  },  
 
   playRecording: async (recording) => {
     const { instrument } = get();
@@ -577,24 +594,24 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   handleRecordingToggle: async () => {
     const { recording } = get();
     console.log('Toggling recording state:', recording);
-  
+
     if (recording) {
       try {
         console.log('Attempting to stop recording...');
         const data = await get().stopRecording();
-  
+
         if (data) {
           console.log('Recording stopped successfully:', data);
-  
+
           // ✅ Add the new recording manually to Zustand
           get().addRecording(data);
-  
+
           set(() => ({
             recording: false,
             recordingNotes: [],
             currentRecordingStartTime: null
           }));
-  
+
           // Optional: reload all recordings to ensure backend sync
           await get().loadRecordings();
         } else {
@@ -608,7 +625,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       try {
         console.log('Starting new recording...');
         await get().startRecording();
-  
+
         set(() => ({
           recording: true,
           recordingNotes: [],
@@ -619,7 +636,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         throw error;
       }
     }
-  },  
+  },
 
   playPianoRoll: async (notes: Array<{ note: string; time: number }>) => {
     try {
