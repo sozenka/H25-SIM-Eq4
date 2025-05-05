@@ -21,7 +21,7 @@ mongoose.connect(process.env.MONGODB_URI || '')
 // ✅ Async wrapper
 const asyncHandler = (
   fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
-) => (req, res, next) => fn(req, res, next).catch(next);
+) => (req: Request, res: Response, next: NextFunction) => fn(req, res, next).catch(next);
 
 // ✅ Auth routes
 app.post('/api/auth/signup', asyncHandler(handleSignUp));
