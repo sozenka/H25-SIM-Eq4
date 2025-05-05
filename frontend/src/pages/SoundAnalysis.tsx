@@ -173,27 +173,6 @@ const SoundAnalysis = () => {
               <AudioVisualizer audioUrl={audioUrl} />
             </motion.div>
           )}
-
-          {/* Analysis Results */}
-          <div className="bg-black/20 p-6 rounded-lg border border-purple-500/20">
-            <h3 className="text-xl font-semibold text-white mb-4">Analyse Harmonique</h3>
-            <div className="space-y-4">
-              <div className="p-4 bg-purple-500/10 rounded-lg">
-                <h4 className="text-purple-300 font-medium mb-2">Gamme Détectée</h4>
-                <p className="text-purple-200">{analysis?.scale || currentScale} Majeur</p>
-              </div>
-              <div className="p-4 bg-purple-500/10 rounded-lg">
-                <h4 className="text-purple-300 font-medium mb-2">Accords Identifiés</h4>
-                <p className="text-purple-200">
-                  {analysis?.chords ? analysis.chords.join(' - ') : 'En attente d\'analyse...'}
-                </p>
-              </div>
-              <div className="p-4 bg-purple-500/10 rounded-lg">
-                <h4 className="text-purple-300 font-medium mb-2">Tempo</h4>
-                <p className="text-purple-200">{analysis?.tempo || '---'} BPM</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

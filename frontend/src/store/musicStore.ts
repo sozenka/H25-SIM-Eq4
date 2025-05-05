@@ -209,11 +209,11 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
       // Initialize synth
       const synth = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 1 },
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 1.5 },
       }).toDestination();
 
-      synth.volume.value = -10;
+      synth.volume.value = 0;
       set({ instrument: synth });
     } catch (error) {
       console.error('Error initializing instrument:', error);
