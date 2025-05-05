@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { handleSignUp, handleSignIn } from './src/lib/api/auth';
-import { Recording, verifyToken } from './mongodb';
+import { Recording, verifyToken } from './src/lib/mongodb';
 
 dotenv.config();
 
