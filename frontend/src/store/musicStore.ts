@@ -288,71 +288,86 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   stopRecording: async () => {
-    const { recorder, recordingNotes, currentRecordingStartTime } = get();
+    const { recorder, recordingNotes, currentRecordingStartTime, user } = get();
     if (!recorder) {
       console.error('No recorder instance found');
       return undefined;
     }
-
+  
     try {
       console.log('Stopping recording with notes:', recordingNotes);
       const blob = await recorder.stop();
       console.log('Recording stopped, processing blob...');
-
-      // Get authentication token
+  
       const token = localStorage.getItem('token');
-      const user = localStorage.getItem('user');
-      console.log('Auth state during save:', { token, user });
-
       if (!token || !user) {
         throw new Error('No authentication token or user data found');
       }
-
-      const userData = JSON.parse(user);
-      console.log('User data:', userData);
-
-      // Convert blob to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = async () => {
-        const base64Audio = reader.result as string;
-        console.log('Audio data length:', base64Audio.length);
-
-        try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              audio: base64Audio,
-              notes: recordingNotes,
-              userId: userData.id,
-              title: `Recording ${new Date().toISOString()}`
-            })
-          });
-
-          console.log('Save response status:', response.status);
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Save error details:', errorData);
-            throw new Error('Failed to save recording');
-          }
-
-          const data = await response.json();
-          console.log('Save successful:', data);
-          set((state) => ({
-            recording: false,
-            recorder: null,
-            recordingNotes: []
-          }));
-          return data;
-        } catch (error) {
-          console.error('Error saving recording:', error);
-          throw error;
-        }
-      };
+  
+      const fileName = `${user.id}_${Date.now()}.webm`;
+      const filePath = `${user.id}/${fileName}`;
+  
+      // Use the service_role key for full permissions
+      const adminSupabase = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+      );
+  
+      const { data, error: uploadError } = await adminSupabase.storage
+        .from('recordings')
+        .upload(filePath, blob, {
+          contentType: 'audio/webm',
+          upsert: true
+        });
+  
+      if (uploadError) {
+        console.error('Failed to upload audio to Supabase:', uploadError);
+        throw uploadError;
+      }
+  
+      const { data: publicUrlData } = adminSupabase.storage
+        .from('recordings')
+        .getPublicUrl(filePath);
+  
+      const audioUrl = publicUrlData?.publicUrl;
+      if (!audioUrl) {
+        console.error('No public URL returned from Supabase');
+        throw new Error('Failed to retrieve audio URL');
+      }
+  
+      const duration = currentRecordingStartTime
+        ? ((Date.now() - currentRecordingStartTime) / 1000).toFixed(2)
+        : '0';
+  
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: `Recording ${new Date().toISOString()}`,
+          notes: recordingNotes,
+          audioUrl,
+          duration
+        })
+      });
+  
+      console.log('Save response status:', response.status);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Save error details:', errorData);
+        throw new Error('Failed to save recording');
+      }
+  
+      const dataResponse = await response.json();
+      console.log('Save successful:', dataResponse);
+      set((state) => ({
+        recording: false,
+        recorder: null,
+        recordingNotes: []
+      }));
+      return dataResponse;
     } catch (error) {
       console.error('Error stopping recording:', error);
       set((state) => ({
@@ -363,6 +378,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       throw error;
     }
   },
+  
 
   addRecording: (recording: Recording) => {
     set((state) => ({
