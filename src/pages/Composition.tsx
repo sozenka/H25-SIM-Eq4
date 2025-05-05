@@ -4,6 +4,7 @@ import { useMusicStore } from "../store/musicStore";
 
 const Composition = () => {
   const PIANO_HEIGHT = 40; //a changer au besoin
+  const [bpm, setBpm] = useState(120);
   const nombresKeys = [
     1, 3, 5, 6, 8, 10, 12, 13, 15, 17, 18, 20, 22, 24, 25, 27, 29, 30, 32, 34,
     36, 37, 39, 41, 42, 44, 46, 48,
@@ -138,7 +139,7 @@ const Composition = () => {
         setPlaying(false);
         setPause(false);
       }
-    }, 200); //tempo de la barre
+    }, 60000 / bpm); //tempo de la barre
   };
 
   const pausePianoRoll = () => {
@@ -288,6 +289,21 @@ const Composition = () => {
               >
                 Reprendre
               </button>
+
+              <div className="space-y-4">
+                <label className="block text-white font-medium">
+                  Tempo: {bpm} BPM
+                </label>
+                <input
+                  type="range"
+                  min={40}
+                  max={400}
+                  step={1}
+                  value={bpm}
+                  onChange={(e) => setBpm(parseInt(e.target.value))}
+                  className="w-full accent-purple-500"
+                />
+              </div>
 
               {/* <button
                 className="w-full py-2 rounded bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 transition-colors"
