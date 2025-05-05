@@ -4,12 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import AudioVisualizer from '../components/AudioVisualizer'
 import { useMusicStore } from '../store/musicStore'
 import type { Recording } from '../store/musicStore'
-
+import { supabase } from '../store/musicStore';
 const SoundAnalysis = () => {
   const { currentScale, recordings, analyzeAudio } = useMusicStore()
   const [audioUrl, setAudioUrl] = useState<string>('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [audioBuffer, setAudioBuffer] = useState<ArrayBuffer | null>(null)
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [analysis, setAnalysis] = useState<{
@@ -40,26 +41,61 @@ const SoundAnalysis = () => {
       }
     }
   }
-
+  
   const handleRecordingSelect = async (recording: Recording) => {
-    if (!recording.audioUrl) return;
-  
     try {
-      const response = await fetch(recording.audioUrl);
-      const blob = await response.blob();
-      const arrayBuffer = await blob.arrayBuffer();
+      let arrayBuffer: ArrayBuffer;
   
+      if (recording.audioData) {
+        arrayBuffer = recording.audioData;
+      } else if (recording.audioUrl) {
+        // ✅ FIX: derive file path from audioUrl
+        const parts = recording.audioUrl.split('/recordings/');
+        if (parts.length < 2) throw new Error('Invalid audio URL format');
+  
+        const audioPath = parts[1]; // this is what Supabase expects
+  
+        const { data, error } = await supabase
+          .storage
+          .from('recordings')
+          .createSignedUrl(audioPath, 60); // signed for 60 sec
+  
+        if (error || !data?.signedUrl) {
+          throw new Error('Failed to get signed URL from Supabase');
+        }
+  
+        const response = await fetch(data.signedUrl);
+        if (!response.ok) throw new Error(`Bad response (${response.status})`);
+  
+        const contentType = response.headers.get('Content-Type');
+        if (!contentType?.startsWith('audio/')) {
+          const preview = await response.clone().text();
+          throw new Error(`Invalid content-type: ${contentType}\nPreview: ${preview.slice(0, 100)}`);
+        }
+  
+        const blob = await response.blob();
+        arrayBuffer = await blob.arrayBuffer();
+      } else {
+        throw new Error('No audio data or URL provided');
+      }
+  
+      // ✅ Decode to make sure it works before analyzing
+      const audioCtx = new AudioContext();
+      await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+  
+      const blob = new Blob([arrayBuffer], { type: 'audio/wav' });
       setAudioUrl(URL.createObjectURL(blob));
+      setAudioBuffer(arrayBuffer);
+  
       const result = await analyzeAudio(arrayBuffer);
       setAnalysis(result);
       setError('');
-    } catch (err) {
-      console.error('Error analyzing recording:', err);
-      setError('Failed to analyze selected recording');
+    } catch (err: any) {
+      console.error('❌ Error analyzing recording:', err);
+      setError(`⚠️ ${err.message || 'Failed to decode or analyze this recording.'}`);
     }
   };
   
-
   const clearAudio = () => {
     setAudioUrl('')
     setAudioFile(null)

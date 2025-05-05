@@ -340,6 +340,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           title: `Recording ${new Date().toISOString()}`,
           notes: recordingNotes,
           audioUrl,
+          audioPath: filePath,
           duration
         })
       });
