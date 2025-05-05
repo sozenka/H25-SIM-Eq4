@@ -199,13 +199,23 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         await ctx.resume();
       }
   
-      // Dispose existing instrument if it exists
+      // Cancel any scheduled playback
+      Tone.Transport.cancel();
+      Tone.Transport.stop();
+  
+      // Dispose the old instrument completely
       const oldInstrument = get().instrument;
       if (oldInstrument) {
-        oldInstrument.disconnect();
-        oldInstrument.dispose();
+        try {
+          oldInstrument.releaseAll(); // release any lingering notes
+          oldInstrument.disconnect();
+          oldInstrument.dispose();
+        } catch (e) {
+          console.warn('Error disposing old instrument:', e);
+        }
       }
   
+      // Create a clean new instrument
       const synth = new Tone.PolySynth(Tone.Synth, {
         volume: -10,
         envelope: {
@@ -225,8 +235,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       console.error('Failed to initialize instrument:', error);
       throw error;
     }
-  },  
-
+  },
+  
   playNote: (note: string) => {
     const { instrument, recording, currentRecordingStartTime } = get();
     if (!instrument) return;
@@ -251,38 +261,25 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   startRecording: async () => {
     try {
-      if (get().recording) {
-        console.log('Recording already in progress');
-        return;
-      }
-
-      // Check if user is authenticated using local storage
+      if (get().recording) return;
+  
       const userStr = localStorage.getItem('user');
-      if (!userStr) {
-        console.error('No authenticated user');
-        throw new Error('User must be authenticated to record');
-      }
-
+      if (!userStr) throw new Error('User must be authenticated');
+  
       const user = JSON.parse(userStr);
       set({ user: { id: user.id, email: user.email || '' } });
-
-      console.log('Starting recording...');
+  
       await Tone.start();
-      
-      // Initialize recorder if not already done
-      const recorder = new Tone.Recorder();
-      Tone.Destination.connect(recorder);
-      
-      // Start recording
+  
+      const recorder = await setupRecorder();
       recorder.start();
-      
-      set((state) => ({
+  
+      set({
         recording: true,
         recorder,
         recordingNotes: [],
         currentRecordingStartTime: Date.now()
-      }));
-      console.log('Recording started successfully');
+      });
     } catch (error) {
       console.error('Error starting recording:', error);
       throw error;
@@ -291,9 +288,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   stopRecording: async () => {
     const { recorder, recordingNotes, currentRecordingStartTime, user } = get();
+  
     if (!recorder) {
       console.error('No recorder instance found');
       return undefined;
+    }
+  
+    if (!get().recording) {
+      console.warn('Tried to stop recording, but no recording is active.');
+      return;
     }
   
     try {
@@ -309,13 +312,12 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       const fileName = `${user.id}_${Date.now()}.webm`;
       const filePath = `${user.id}/${fileName}`;
   
-      // Use the service_role key for full permissions
       const adminSupabase = createClient(
         import.meta.env.VITE_SUPABASE_URL,
         import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
       );
   
-      const { data, error: uploadError } = await adminSupabase.storage
+      const { error: uploadError } = await adminSupabase.storage
         .from('recordings')
         .upload(filePath, blob, {
           contentType: 'audio/webm',
@@ -355,7 +357,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         })
       });
   
-      console.log('Save response status:', response.status);
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Save error details:', errorData);
@@ -364,15 +365,17 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   
       const dataResponse = await response.json();
       console.log('Save successful:', dataResponse);
-      set((state) => ({
+  
+      set(() => ({
         recording: false,
         recorder: null,
         recordingNotes: []
       }));
+  
       return dataResponse;
     } catch (error) {
       console.error('Error stopping recording:', error);
-      set((state) => ({
+      set(() => ({
         recording: false,
         recorder: null,
         recordingNotes: []
@@ -398,7 +401,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       if (recording.audioUrl) {
         const parts = recording.audioUrl.split('/');
         const index = parts.findIndex(p => p === 'recordings');
-        const path = parts.slice(index + 1).join('/'); // e.g., user123/filename.webm
+        const path = parts.slice(index + 1).join('/');        
   
         if (path) {
           const { error: storageError } = await supabase
