@@ -33,7 +33,7 @@ app.post('/api/recordings', asyncHandler(async (req: Request, res: Response) => 
   const decoded = token && verifyToken(token);
   if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { title, notes, audioUrl, duration, audioPath } = req.body;
+  const { name, notes, audioUrl, duration, audioPath } = req.body;
 
   if (!audioUrl || !duration || !notes || !audioPath) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -41,7 +41,7 @@ app.post('/api/recordings', asyncHandler(async (req: Request, res: Response) => 
 
   const recording = new Recording({
     userId: decoded.id,
-    name: title,
+    name: name,
     notes,
     duration,
     audioUrl,

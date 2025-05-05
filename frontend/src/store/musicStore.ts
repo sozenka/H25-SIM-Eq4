@@ -19,6 +19,7 @@ export interface Recording {
   duration: string;
   createdAt: string;
   audioUrl: string;
+  audioPath: string;
   audioData?: ArrayBuffer;
 }
 
@@ -272,64 +273,66 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }
   },
 
-  stopRecording: async () => {
+  stopRecording: async (customName?: string) => {
     const { recorder, recordingNotes, currentRecordingStartTime, user } = get();
-
+  
     if (!recorder) {
       console.error('No recorder instance found');
       return undefined;
     }
-
+  
     if (!get().recording) {
       console.warn('Tried to stop recording, but no recording is active.');
       return;
     }
-
+  
     try {
       console.log('Stopping recording with notes:', recordingNotes);
       const blob = await recorder.stop();
       const audioBuffer = await blob.arrayBuffer();
       console.log('Recording stopped, processing blob...');
-
+  
       const token = localStorage.getItem('token');
       if (!token || !user) {
         throw new Error('No authentication token or user data found');
       }
-
+  
       const fileName = `${user.id}_${Date.now()}.wav`;
       const filePath = `${user.id}/${fileName}`;
-
+  
       const adminSupabase = createClient(
         import.meta.env.VITE_SUPABASE_URL,
         import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
       );
-
+  
       const { error: uploadError } = await adminSupabase.storage
         .from('recordings')
         .upload(filePath, blob, {
           contentType: 'audio/wav',
           upsert: true
         });
-
+  
       if (uploadError) {
         console.error('Failed to upload audio to Supabase:', uploadError);
         throw uploadError;
       }
-
+  
       const { data: publicUrlData } = adminSupabase.storage
         .from('recordings')
         .getPublicUrl(filePath);
-
+  
       const audioUrl = publicUrlData?.publicUrl;
       if (!audioUrl) {
         console.error('No public URL returned from Supabase');
         throw new Error('Failed to retrieve audio URL');
       }
-
+  
       const duration = currentRecordingStartTime
         ? ((Date.now() - currentRecordingStartTime) / 1000).toFixed(2)
         : '0';
-
+  
+      const name = customName || `Recording ${new Date().toISOString()}`;
+  
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings`, {
         method: 'POST',
         headers: {
@@ -337,41 +340,41 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          title: `Recording ${new Date().toISOString()}`,
+          name: `Composition ${get().recordings.length + 1}`,
           notes: recordingNotes,
           audioUrl,
           audioPath: filePath,
           duration
         })
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Save error details:', errorData);
         throw new Error('Failed to save recording');
       }
-
+  
       const dataResponse = await response.json();
       console.log('Save successful:', dataResponse);
-
+  
       set(() => ({
         recording: false,
         recorder: null,
         recordingNotes: []
       }));
-
+  
       return {
         id: dataResponse.recordingId,
         userId: user.id,
-        name: `Recording ${new Date().toISOString()}`,
+        name,
         notes: recordingNotes,
         duration,
         createdAt: new Date().toISOString(),
         audioUrl,
-        audioData: audioBuffer // ✅ Add this line!
+        audioPath: filePath,
+        audioData: audioBuffer
       };
-
-      audioData: audioBuffer
+  
     } catch (error) {
       console.error('Error stopping recording:', error);
       set(() => ({
@@ -381,8 +384,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       }));
       throw error;
     }
-  },
-
+  },  
 
   addRecording: (recording: Recording) => {
     set((state) => ({
@@ -489,35 +491,38 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   loadRecordings: async () => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        console.log('No authentication token found');
-        return;
-      }
+      if (!token) return;
   
-      // Fetch recordings metadata from backend
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
   
-      if (!response.ok) {
-        throw new Error('Failed to load recordings');
-      }
-  
+      if (!response.ok) throw new Error('Failed to load recordings');
       const data = await response.json();
   
-      // Fetch audio blobs and convert to ArrayBuffer
+      // Map old names if they exist
+      const currentRecordings = get().recordings;
+  
       const enriched = await Promise.all(
         data.map(async (recording: any) => {
           try {
             const res = await fetch(recording.audioUrl);
             const blob = await res.blob();
             const arrayBuffer = await blob.arrayBuffer();
-            return { ...recording, audioData: arrayBuffer };
+  
+            // Try to match name from current store
+            const existing = currentRecordings.find(r => r.id === recording._id || r.audioUrl === recording.audioUrl);
+            return {
+              id: recording._id,
+              name: existing?.name || recording.name || 'Untitled',
+              ...recording,
+              audioData: arrayBuffer
+            };
           } catch (err) {
-            console.error(`⚠️ Failed to fetch audio for recording "${recording.name}":`, err);
-            return recording; // fallback without audioData
+            console.error(`⚠️ Failed to fetch audio for "${recording.name}":`, err);
+            return recording;
           }
         })
       );
@@ -526,7 +531,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     } catch (error) {
       console.error('❌ Error loading recordings:', error);
     }
-  },  
+  }, 
 
   playRecording: async (recording) => {
     const { instrument } = get();
