@@ -4,6 +4,7 @@ import { useMusicStore } from "../store/musicStore";
 import { Play, Pause, Save, Music, CircleDot, RotateCcw, Trash2, Edit2, Check, X, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Recording } from '../store/musicStore';
+import { downloadRecording } from '../utils/audio'
 
 // Helper function to convert Base64 to ArrayBuffer
 const base64ToBuffer = (base64: string): ArrayBuffer => {
@@ -315,42 +316,6 @@ const Composition = () => {
     }
   };
 
-  const handleDownloadRecording = async (recording: Recording) => {
-    if (!recording.audioUrl) {
-      alert('No audio data available for this recording');
-      return;
-    }
-
-    try {
-      // Convert Base64 to ArrayBuffer if needed
-      const audioUrl = typeof recording.audioUrl === 'string'
-        ? base64ToBuffer(recording.audioUrl)
-        : recording.audioUrl;
-
-      // Create a Blob with the correct MIME type
-      const blob = new Blob([audioUrl], { type: 'audio/wav' });
-
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${recording.name}.wav`;
-
-      // Trigger download
-      document.body.appendChild(a);
-      a.click();
-
-      // Cleanup
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }, 100);
-    } catch (error) {
-      console.error('Error downloading recording:', error);
-      alert('Failed to download recording. Please try again.');
-    }
-  };
-
   const handlePlayRecording = (recording: Recording) => {
     if (playing) {
       setPlaying(false);
@@ -595,7 +560,7 @@ const Composition = () => {
                                 <Edit2 className="w-5 h-5" />
                               </button>
                               <button
-                                onClick={() => handleDownloadRecording(rec)}
+                                onClick={() => downloadRecording(rec)}
                                 className="p-2 text-purple-400 hover:text-purple-300"
                               >
                                 <Download className="w-5 h-5" />

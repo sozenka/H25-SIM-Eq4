@@ -47,30 +47,6 @@ const Recordings = () => {
     }
   }
 
-  const handleDownloadRecording = async (recording: Recording) => {
-    if (!recording.audioUrl) {
-      alert('No audio file found.');
-      return;
-    }
-
-    try {
-      const response = await fetch(recording.audioUrl);
-      const blob = await response.blob();
-
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${recording.name}.webm`; // or .mp3 if you encode that
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(a.href);
-    } catch (err) {
-      console.error('Error downloading recording:', err);
-      alert('Download failed');
-    }
-  };
-
-
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
       <h2 className="text-3xl font-bold text-white mb-8">Mes Enregistrements</h2>

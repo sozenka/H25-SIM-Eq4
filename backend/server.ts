@@ -98,15 +98,15 @@ app.patch('/api/recordings/:id', asyncHandler(async (req: Request, res: Response
   if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
 
   const { id } = req.params;
-  const { name, audioUrl } = req.body;
+  const { name } = req.body;
 
-  if (!name || !audioUrl) {
-    return res.status(400).json({ error: 'Missing name or audioUrl' });
+  if (!name) {
+    return res.status(400).json({ error: 'Missing name' });
   }
 
   const updated = await Recording.findOneAndUpdate(
     { _id: new mongoose.Types.ObjectId(id), userId: decoded.id },
-    { name, audioUrl },
+    { name },
     { new: true }
   );
 
@@ -114,8 +114,9 @@ app.patch('/api/recordings/:id', asyncHandler(async (req: Request, res: Response
     return res.status(404).json({ error: 'Recording not found or not authorized' });
   }
 
-  res.status(200).json({ message: 'Recording updated', recording: updated });
+  res.status(200).json({ message: 'Recording renamed', recording: updated });
 }));
+
 
 // ✅ Health check
 app.get('/health', (_req, res) => {

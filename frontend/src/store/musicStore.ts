@@ -295,7 +295,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         throw new Error('No authentication token or user data found');
       }
 
-      const fileName = `${user.id}_${Date.now()}.webm`;
+      const fileName = `${user.id}_${Date.now()}.wav`;
       const filePath = `${user.id}/${fileName}`;
 
       const adminSupabase = createClient(
@@ -306,7 +306,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       const { error: uploadError } = await adminSupabase.storage
         .from('recordings')
         .upload(filePath, blob, {
-          contentType: 'audio/webm',
+          contentType: 'audio/wav',
           upsert: true
         });
 
@@ -448,47 +448,37 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }
   },  
 
-  updateRecordingName: async (recordingId, newName) => {
+  updateRecordingName: async (recordingId: string, newName: string) => {
     try {
-      const rec = get().recordings.find(r => r.id === recordingId);
-      if (!rec || !rec.audioUrl) return;
-
-      const path = rec.audioUrl.split('/recordings/')[1];
-
-      const newPath = path.replace(rec.name, newName);
-
-      // Copy old to new
-      const { error: copyError } = await supabase
-        .storage
-        .from('recordings')
-        .copy(path, newPath);
-
-      if (copyError) throw copyError;
-
-      // Remove old
-      await supabase.storage.from('recordings').remove([path]);
-
-      // Update URL
-      const { data } = supabase.storage.from('recordings').getPublicUrl(newPath);
-
-      // Update backend name and url
-      const { error } = await supabase
-        .from('recordings')
-        .update({ name: newName, audioUrl: data.publicUrl })
-        .eq('id', recordingId);
-
-      if (error) throw error;
-
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No auth token');
+  
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings/${recordingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: newName })
+      });
+  
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to rename recording');
+      }
+  
+      const updated = await response.json();
       set(state => ({
         recordings: state.recordings.map(r =>
-          r.id === recordingId ? { ...r, name: newName, audioUrl: data.publicUrl } : r
+          r.id === recordingId ? { ...r, name: newName } : r
         )
       }));
+  
+      console.log('✅ Renamed recording:', updated);
     } catch (err) {
-      console.error('Rename error:', err);
-      throw err;
+      console.error('❌ Rename failed:', err);
     }
-  },
+  },  
 
   setScale: (scale) => set({ currentScale: scale }),
   setOctave: (octave) => set({ currentOctave: octave }),
