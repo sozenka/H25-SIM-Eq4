@@ -47,39 +47,29 @@ const Recordings = () => {
     }
   }
 
-  const handleDownloadRecording = (recording: Recording) => {
-    if (!recording.audioData) {
-      alert('No audio data available for this recording');
+  const handleDownloadRecording = async (recording: Recording) => {
+    if (!recording.audioUrl) {
+      alert('No audio file found.');
       return;
     }
-
+  
     try {
-      // Ensure we have the correct audio data format
-      const audioData = typeof recording.audioData === 'string' 
-        ? base64ToBuffer(recording.audioData)
-        : recording.audioData;
-
-      // Create a blob with the correct MIME type
-      const blob = new Blob([audioData], { type: 'audio/webm' });
-      const url = URL.createObjectURL(blob);
-      
-      // Create a temporary link element
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${recording.name || 'recording'}.webm`;
-      
-      // Append to body, click, and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the URL object
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading recording:', error);
-      alert('Failed to download recording. Please try again.');
+      const response = await fetch(recording.audioUrl);
+      const blob = await response.blob();
+  
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${recording.name}.webm`; // or .mp3 if you encode that
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+    } catch (err) {
+      console.error('Error downloading recording:', err);
+      alert('Download failed');
     }
   };
+  
 
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">

@@ -193,14 +193,19 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   initializeInstrument: async () => {
     try {
-      // Start Tone.js and ensure audio context is running
       await Tone.start();
       const ctx = getAudioContext();
       if (ctx.state === 'suspended') {
         await ctx.resume();
       }
-      
-      // Configure the synth with proper voice management
+  
+      // Dispose existing instrument if it exists
+      const oldInstrument = get().instrument;
+      if (oldInstrument) {
+        oldInstrument.disconnect();
+        oldInstrument.dispose();
+      }
+  
       const synth = new Tone.PolySynth(Tone.Synth, {
         volume: -10,
         envelope: {
@@ -209,21 +214,18 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           sustain: 0.3,
           release: 1
         },
-        oscillator: {
-          type: "sine"
-        }
+        oscillator: { type: "sine" }
       }).toDestination();
-      
-      // Set the maximum number of voices and voice stealing
+  
       synth.maxPolyphony = 32;
       synth.voiceStealing = true;
-      
+  
       set({ instrument: synth });
     } catch (error) {
       console.error('Failed to initialize instrument:', error);
       throw error;
     }
-  },
+  },  
 
   playNote: (note: string) => {
     const { instrument, recording, currentRecordingStartTime } = get();
@@ -388,30 +390,45 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   deleteRecording: async (recordingId: string) => {
     try {
-      // First, get the recording to check if it has an audio file
+      // Find the recording in local state
       const recording = get().recordings.find(r => r.id === recordingId);
       if (!recording) return;
-
-      // If there's an audio file, delete it from storage
+  
+      // Parse and delete the file from Supabase Storage
       if (recording.audioUrl) {
-        const audioPath = recording.audioUrl.split('/').pop();
-        if (audioPath) {
-          const { error: storageError } = await supabase.storage
+        const parts = recording.audioUrl.split('/');
+        const index = parts.findIndex(p => p === 'recordings');
+        const path = parts.slice(index + 1).join('/'); // e.g., user123/filename.webm
+  
+        if (path) {
+          const { error: storageError } = await supabase
+            .storage
             .from('recordings')
-            .remove([audioPath]);
-          
-          if (storageError) throw storageError;
+            .remove([path]);
+  
+          if (storageError) {
+            console.error('Supabase delete error:', storageError);
+            throw storageError;
+          }
         }
       }
-
-      // Delete the recording record from Supabase
-      const { error } = await supabase
-        .from('recordings')
-        .delete()
-        .eq('id', recordingId);
-
-      if (error) throw error;
-
+  
+      // Delete metadata from MongoDB via your backend
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No auth token');
+  
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings/${recordingId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+  
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete recording');
+      }
+  
       // Update local state
       set(state => ({
         recordings: state.recordings.filter(r => r.id !== recordingId)
@@ -421,26 +438,50 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       throw error;
     }
   },
+  
 
-  updateRecordingName: async (recordingId: string, newName: string) => {
+  updateRecordingName: async (recordingId, newName) => {
     try {
+      const rec = get().recordings.find(r => r.id === recordingId);
+      if (!rec || !rec.audioUrl) return;
+  
+      const parts = rec.audioUrl.split('/');
+      const index = parts.findIndex(p => p === 'recordings');
+      const path = parts.slice(index + 1).join('/');
+      const newPath = path.replace(rec.name, newName);
+  
+      // Copy old to new
+      const { error: copyError } = await supabase
+        .storage
+        .from('recordings')
+        .copy(path, newPath);
+  
+      if (copyError) throw copyError;
+  
+      // Remove old
+      await supabase.storage.from('recordings').remove([path]);
+  
+      // Update URL
+      const { data } = supabase.storage.from('recordings').getPublicUrl(newPath);
+  
+      // Update backend name and url
       const { error } = await supabase
         .from('recordings')
-        .update({ name: newName })
+        .update({ name: newName, audioUrl: data.publicUrl })
         .eq('id', recordingId);
-
+  
       if (error) throw error;
-
+  
       set(state => ({
         recordings: state.recordings.map(r =>
-          r.id === recordingId ? { ...r, name: newName } : r
+          r.id === recordingId ? { ...r, name: newName, audioUrl: data.publicUrl } : r
         )
       }));
-    } catch (error) {
-      console.error('Error updating recording name:', error);
-      throw error;
+    } catch (err) {
+      console.error('Rename error:', err);
+      throw err;
     }
-  },
+  },  
 
   setScale: (scale) => set({ currentScale: scale }),
   setOctave: (octave) => set({ currentOctave: octave }),
