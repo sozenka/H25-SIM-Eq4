@@ -52,11 +52,11 @@ const Recordings = () => {
       alert('No audio file found.');
       return;
     }
-  
+
     try {
       const response = await fetch(recording.audioUrl);
       const blob = await response.blob();
-  
+
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `${recording.name}.webm`; // or .mp3 if you encode that
@@ -69,7 +69,7 @@ const Recordings = () => {
       alert('Download failed');
     }
   };
-  
+
 
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
@@ -91,7 +91,7 @@ const Recordings = () => {
           ) : (
             recordings.map((recording) => (
               <motion.div
-                key={recording.id}
+                key={recording.id || recording.name || Math.random().toString(36)}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}

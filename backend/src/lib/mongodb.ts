@@ -50,7 +50,7 @@ userSchema.pre('save', async function(next) {
 
 // User methods
 userSchema.methods.generateAuthToken = function() {
-  return jwt.sign({ id: this._id }, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ id: this.id }, JWT_SECRET, { expiresIn: '7d' });
 };
 
 userSchema.methods.comparePassword = async function(password: string) {
@@ -73,7 +73,7 @@ export const signUp = async (email: string, username: string, password: string) 
   
   return {
     user: {
-      id: user._id,
+      id: user.id,
       email: user.email,
       username: user.username
     },
@@ -90,7 +90,7 @@ export const signIn = async (email: string, password: string) => {
   const token = user.generateAuthToken();
   return {
     user: {
-      id: user._id,
+      id: user.id,
       email: user.email,
       username: user.username
     },

@@ -7,32 +7,28 @@ export const base64ToBuffer = (base64: string): ArrayBuffer => {
   }
   return buffer.buffer;
 };
+// use this in audio.ts or wherever it's imported from
+import type { Recording } from '../store/musicStore'; // if it's in another file
 
-export const downloadRecording = (recording: {
-  name: string;
-  audioData?: ArrayBuffer | string;
-}) => {
-  if (!recording.audioData) {
-    alert("No audio data available for this recording.");
+export const downloadRecording = async (recording: Recording) => {
+  if (!recording.audioUrl) {
+    alert("No audio URL found for this recording.");
     return;
   }
 
   try {
-    const audioData = typeof recording.audioData === 'string'
-      ? base64ToBuffer(recording.audioData)
-      : recording.audioData;
-
-    const blob = new Blob([audioData], { type: 'audio/webm;codecs=opus' });
-    const url = URL.createObjectURL(blob);
+    const response = await fetch(recording.audioUrl);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${recording.name}.webm`;
+    a.download = `${recording.name || 'recording'}.webm`;
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Error downloading recording:', error);
-    alert('Failed to download recording. Please try again.');
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Error downloading audio:', err);
+    alert('Download failed.');
   }
 };

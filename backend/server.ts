@@ -51,7 +51,7 @@ app.post('/api/recordings', asyncHandler(async (req: Request, res: Response) => 
 
   res.status(201).json({
     message: 'Recording saved successfully',
-    recordingId: recording._id
+    recordingId: recording.id
   });
 }));
 
@@ -79,3 +79,52 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
 });
+
+app.delete('/api/recordings/:id', asyncHandler(async (req: Request, res: Response) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  const decoded = token && verifyToken(token);
+  if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { id } = req.params;
+
+  const result = await Recording.deleteOne({
+    _id: new mongoose.Types.ObjectId(id),
+    userId: decoded.id
+  });
+
+  if (result.deletedCount === 0) {
+    return res.status(404).json({ error: 'Recording not found or not authorized' });
+  }
+
+  res.status(200).json({ message: 'Recording deleted from DB' });
+}));
+
+
+app.patch('/api/recordings/:id', asyncHandler(async (req: Request, res: Response) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  const decoded = token && verifyToken(token);
+  if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { id } = req.params;
+  const { name, audioUrl } = req.body;
+
+  if (!name || !audioUrl) {
+    return res.status(400).json({ error: 'Missing name or audioUrl' });
+  }
+
+  const updated = await Recording.findOneAndUpdate(
+    {
+      _id: new mongoose.Types.ObjectId(id),
+      userId: decoded.id
+    },
+    { name, audioUrl },
+    { new: true }
+  );
+
+  if (!updated) {
+    return res.status(404).json({ error: 'Recording not found or not authorized' });
+  }
+
+  res.status(200).json({ message: 'Recording updated', recording: updated });
+}));
+
