@@ -51,35 +51,27 @@ app.post('/api/recordings', asyncHandler(async (req: Request, res: Response) => 
 
   res.status(201).json({
     message: 'Recording saved successfully',
-    recordingId: recording.id
+    recordingId: recording._id.toString()
   });
 }));
 
-// ✅ Fetch recordings
+// ✅ Fetch recordings (send `id` instead of `_id`)
 app.get('/api/recordings', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   const decoded = token && verifyToken(token);
   if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
 
   const recordings = await Recording.find({ userId: decoded.id });
-  res.status(200).json(recordings);
+
+  const result = recordings.map(r => ({
+    ...r.toObject(),
+    id: r._id.toString()
+  }));
+
+  res.status(200).json(result);
 }));
 
-// ✅ Health check
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
-// ✅ Error handler
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('❌ Server error:', err);
-  res.status(500).json({ error: 'Internal Server Error', details: err?.message || err });
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
-});
-
+// ✅ Delete a recording using _id
 app.delete('/api/recordings/:id', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   const decoded = token && verifyToken(token);
@@ -99,7 +91,7 @@ app.delete('/api/recordings/:id', asyncHandler(async (req: Request, res: Respons
   res.status(200).json({ message: 'Recording deleted from DB' });
 }));
 
-
+// ✅ Update a recording using _id
 app.patch('/api/recordings/:id', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   const decoded = token && verifyToken(token);
@@ -113,10 +105,7 @@ app.patch('/api/recordings/:id', asyncHandler(async (req: Request, res: Response
   }
 
   const updated = await Recording.findOneAndUpdate(
-    {
-      _id: new mongoose.Types.ObjectId(id),
-      userId: decoded.id
-    },
+    { _id: new mongoose.Types.ObjectId(id), userId: decoded.id },
     { name, audioUrl },
     { new: true }
   );
@@ -128,3 +117,18 @@ app.patch('/api/recordings/:id', asyncHandler(async (req: Request, res: Response
   res.status(200).json({ message: 'Recording updated', recording: updated });
 }));
 
+// ✅ Health check
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// ✅ Global error handler
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('❌ Server error:', err);
+  res.status(500).json({ error: 'Internal Server Error', details: err?.message || err });
+});
+
+// ✅ Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
+});
