@@ -4,6 +4,7 @@ import { useMusicStore } from "../store/musicStore";
 import { Play, Pause, Save, Music, CircleDot, RotateCcw, Trash2, Edit2, Check, X, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Recording } from '../store/musicStore';
+import { downloadRecording } from '../utils/audio'
 
 // Helper function to convert Base64 to ArrayBuffer
 const base64ToBuffer = (base64: string): ArrayBuffer => {
@@ -59,20 +60,20 @@ const Composition = () => {
   useEffect(() => {
     const handleFirstInteraction = async () => {
       if (isInitializing) return;
-      
+
       try {
         setIsInitializing(true);
         setError(null);
-        
+
         // Initialize Tone.js and AudioContext
         await initializeInstrument();
-        
+
         // Load recordings after initialization
         await loadRecordings();
-        
+
         // Set initialized flag
         setIsInitialized(true);
-        
+
         // Remove event listeners after initialization
         document.removeEventListener('click', handleFirstInteraction);
         document.removeEventListener('keydown', handleFirstInteraction);
@@ -226,13 +227,13 @@ const Composition = () => {
           stopRecording().then(data => {
             if (data) {
               addRecording({
-                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                id: data.id,
                 userId: data.userId,
                 name: `Composition ${recordings.length + 1}`,
                 duration: data.duration,
-                createdAt: data.createdAt,
+                createdAt: data.createdAt || new Date().toISOString(),
                 notes: data.notes,
-                audioData: data.audioData,
+                audioUrl: data.audioUrl
               });
             }
           });
@@ -255,7 +256,7 @@ const Composition = () => {
       setColonneActuelle(null);
       setPlaying(false);
       setPause(false);
-      
+
       if (recordWhilePlaying && recording) {
         stopRecording().then(data => {
           if (data) {
@@ -266,7 +267,7 @@ const Composition = () => {
               duration: data.duration,
               createdAt: new Date().toISOString(),
               notes: data.notes,
-              audioData: data.audioData,
+              audioUrl: data.audioUrl,
             };
             addRecording(newRecording);
           }
@@ -286,7 +287,7 @@ const Composition = () => {
           duration: data.duration,
           createdAt: new Date().toISOString(),
           notes: data.notes,
-          audioData: data.audioData,
+          audioUrl: data.audioUrl,
         };
         addRecording(newRecording);
       }
@@ -295,53 +296,23 @@ const Composition = () => {
     }
   };
 
-  const handleDeleteRecording = (recordingId: string) => {
+  const handleDeleteRecording = (recordingId: string | undefined) => {
+    if (!recordingId) {
+      console.warn('Tried to delete a recording with undefined ID');
+      return;
+    }
+
     if (window.confirm('Are you sure you want to delete this recording?')) {
       deleteRecording(recordingId);
     }
   };
+
 
   const handleRenameRecording = (recordingId: string, newName: string) => {
     if (newName.trim()) {
       updateRecordingName(recordingId, newName.trim());
       setEditingRecordingId(null);
       setNewRecordingName('');
-    }
-  };
-
-  const handleDownloadRecording = async (recording: Recording) => {
-    if (!recording.audioData) {
-      alert('No audio data available for this recording');
-      return;
-    }
-
-    try {
-      // Convert Base64 to ArrayBuffer if needed
-      const audioData = typeof recording.audioData === 'string' 
-        ? base64ToBuffer(recording.audioData)
-        : recording.audioData;
-      
-      // Create a Blob with the correct MIME type
-      const blob = new Blob([audioData], { type: 'audio/wav' });
-      
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${recording.name}.wav`;
-      
-      // Trigger download
-      document.body.appendChild(a);
-      a.click();
-      
-      // Cleanup
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }, 100);
-    } catch (error) {
-      console.error('Error downloading recording:', error);
-      alert('Failed to download recording. Please try again.');
     }
   };
 
@@ -363,7 +334,7 @@ const Composition = () => {
               {isInitializing ? 'Initializing audio system...' : 'Click anywhere to start'}
             </h2>
             <p className="text-white/80">
-              {isInitializing 
+              {isInitializing
                 ? 'Please wait while we set up the audio system...'
                 : 'The audio system needs your permission to start'}
             </p>
@@ -382,9 +353,8 @@ const Composition = () => {
         <div className="flex gap-4">
           <motion.button
             onClick={handleRecordingToggle}
-            className={`px-6 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-              recording ? 'bg-red-600' : 'bg-purple-600'
-            } text-white`}
+            className={`px-6 py-2 rounded-lg flex items-center gap-2 transition-colors ${recording ? 'bg-red-600' : 'bg-purple-600'
+              } text-white`}
           >
             {recording ? (
               <>
@@ -455,14 +425,13 @@ const Composition = () => {
                         key={`${row}-${col}`}
                         onClick={() => changerEtatNote(row, col)}
                         className={`border border-gray-300 cursor-pointer transition-colors duration-75
-                          ${
-                            isColonneAct
-                              ? "bg-pink-400"
-                              : isActive
+                          ${isColonneAct
+                            ? "bg-pink-400"
+                            : isActive
                               ? "bg-blue-500 hover:bg-blue-600"
                               : isDarkRow
-                              ? "bg-purple-700 hover:bg-purple-600"
-                              : "bg-purple-500 hover:bg-purple-600"
+                                ? "bg-purple-700 hover:bg-purple-600"
+                                : "bg-purple-500 hover:bg-purple-600"
                           }`}
                       />
                     );
@@ -510,11 +479,10 @@ const Composition = () => {
               <div className="space-y-2">
                 <button
                   onClick={playing ? stopPianoRoll : playPianoRoll}
-                  className={`w-full py-2 rounded ${
-                    playing
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-green-600 hover:bg-green-700"
-                  } text-white`}
+                  className={`w-full py-2 rounded ${playing
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-green-600 hover:bg-green-700"
+                    } text-white`}
                 >
                   {playing ? "Arrêter la lecture" : "Démarrer la lecture"}
                 </button>
@@ -536,85 +504,85 @@ const Composition = () => {
               <div className="space-y-2">
                 {recordings.slice(0, 5).map((rec) => (
                   <div
-                    key={rec.id}
+                    key={rec.id || rec.name || Math.random().toString(36)}
                     className="bg-purple-500/10 hover:bg-purple-500/20 p-3 rounded-lg flex justify-between items-center"
                   >
-                    <div className="flex-1">
-                      {editingRecordingId === rec.id ? (
-                        <input
-                          type="text"
-                          value={newRecordingName}
-                          onChange={(e) => setNewRecordingName(e.target.value)}
-                          className="bg-white/10 text-white px-2 py-1 rounded w-full"
-                          autoFocus
-                        />
-                      ) : (
-                        <p className="text-purple-200 font-medium">{rec.name}</p>
-                      )}
-                      <p className="text-purple-300 text-sm">
-                        {new Date(rec.createdAt).toLocaleDateString()} • {rec.duration}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handlePlayRecording(rec)}
-                        className="p-2 text-purple-400 hover:text-purple-300"
-                      >
-                        {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                      </button>
-                      {editingRecordingId === rec.id ? (
-                        <>
+                        <div className="flex-1">
+                          {editingRecordingId === rec.id ? (
+                            <input
+                              type="text"
+                              value={newRecordingName}
+                              onChange={(e) => setNewRecordingName(e.target.value)}
+                              className="bg-white/10 text-white px-2 py-1 rounded w-full"
+                              autoFocus
+                            />
+                          ) : (
+                            <p className="text-purple-200 font-medium">{rec.name}</p>
+                          )}
+                          <p className="text-purple-300 text-sm">
+                            {new Date(rec.createdAt).toLocaleDateString()} • {rec.duration}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => handleRenameRecording(rec.id, newRecordingName)}
-                            className="p-2 text-green-400 hover:text-green-300"
-                          >
-                            <Check className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingRecordingId(null);
-                              setNewRecordingName('');
-                            }}
-                            className="p-2 text-red-400 hover:text-red-300"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => {
-                              setEditingRecordingId(rec.id);
-                              setNewRecordingName(rec.name);
-                            }}
-                            className="p-2 text-blue-400 hover:text-blue-300"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDownloadRecording(rec)}
+                            onClick={() => handlePlayRecording(rec)}
                             className="p-2 text-purple-400 hover:text-purple-300"
                           >
-                            <Download className="w-5 h-5" />
+                            {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                           </button>
-                          <button
-                            onClick={() => handleDeleteRecording(rec.id)}
-                            className="p-2 text-red-400 hover:text-red-300"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                          {editingRecordingId === rec.id ? (
+                            <>
+                              <button
+                                onClick={() => handleRenameRecording(rec.id, newRecordingName)}
+                                className="p-2 text-green-400 hover:text-green-300"
+                              >
+                                <Check className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingRecordingId(null);
+                                  setNewRecordingName('');
+                                }}
+                                className="p-2 text-red-400 hover:text-red-300"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditingRecordingId(rec.id);
+                                  setNewRecordingName(rec.name);
+                                }}
+                                className="p-2 text-blue-400 hover:text-blue-300"
+                              >
+                                <Edit2 className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => downloadRecording(rec)}
+                                className="p-2 text-purple-400 hover:text-purple-300"
+                              >
+                                <Download className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteRecording(rec.id)}
+                                className="p-2 text-red-400 hover:text-red-300"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+            </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+      );
 };
 
-export default Composition;
+      export default Composition;

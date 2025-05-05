@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Music, Brain, AudioWaveform as Waveform, Mic, Settings as SettingsIcon, Home as HomeIcon, LogIn } from 'lucide-react'
+import { Music, Brain, AudioWaveform as Waveform, Mic, Settings as SettingsIcon, Home as HomeIcon, LogIn, Menu } from 'lucide-react'
 import Navigation from './components/Navigation'
 import Home from './pages/Home'
 import Composition from './pages/Composition'
@@ -14,6 +14,7 @@ type Page = 'home' | 'composition' | 'ai' | 'analysis' | 'recordings' | 'setting
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home')
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [user, setUser] = useState<{ id: string; email: string; username: string } | null>(null)
 
   useEffect(() => {
@@ -45,6 +46,7 @@ function App() {
       setIsAuthModalOpen(true)
     } else {
       setCurrentPage(page as Page)
+      setIsMobileMenuOpen(false)
     }
   }
 
@@ -69,6 +71,16 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
+      <div className="md:hidden flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-lg border-b border-white/10">
+        <span className="text-xl font-bold text-white">HarmonAI</span>
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      </div>
+
       <Navigation 
         items={navItems} 
         currentPage={currentPage} 
@@ -76,10 +88,13 @@ function App() {
         user={user}
         onLogin={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
+        isMobileMenuOpen={isMobileMenuOpen}
       />
-      <main className="container mx-auto px-4 py-8">
+      
+      <main className="container mx-auto px-4 py-8 mt-0 md:mt-0">
         {renderPage()}
       </main>
+      
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 

@@ -7,42 +7,28 @@ export const base64ToBuffer = (base64: string): ArrayBuffer => {
   }
   return buffer.buffer;
 };
+// use this in audio.ts or wherever it's imported from
+import type { Recording } from '../store/musicStore'; // if it's in another file
 
-export const downloadRecording = (recording: {
-  name: string;
-  audioData?: ArrayBuffer | string;
-}) => {
-  let buffer: ArrayBuffer | null = null;
-
-  if (!recording.audioData) {
-    alert("No audio data available for this recording.");
+export const downloadRecording = async (recording: Recording) => {
+  if (!recording.audioUrl) {
+    alert("No audio URL found for this recording.");
     return;
   }
 
-  if (recording.audioData instanceof ArrayBuffer) {
-    buffer = recording.audioData;
-  } else if (typeof recording.audioData === "string") {
-    try {
-      buffer = base64ToBuffer(recording.audioData);
-    } catch (error) {
-      console.error("Error decoding base64 audio data:", error);
-      alert("Failed to decode audio data.");
-      return;
-    }
+  try {
+    const response = await fetch(recording.audioUrl);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${recording.name || 'recording'}.wav`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Error downloading audio:', err);
+    alert('Download failed.');
   }
-
-  if (!buffer) {
-    alert("Audio data format not recognized.");
-    return;
-  }
-
-  const blob = new Blob([buffer], { type: "audio/wav" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${recording.name}.wav`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}; 
+};
