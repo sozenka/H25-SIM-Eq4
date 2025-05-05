@@ -1,10 +1,22 @@
 import React, { useState, useRef, useEffect } from "react";
 import Piano from "../components/Piano";
 import { useMusicStore } from "../store/musicStore";
-import { Play, Pause, Save, Music, CircleDot, RotateCcw, Trash2, Edit2, Check, X, Download } from 'lucide-react';
-import { motion } from 'framer-motion';
-import type { Recording } from '../store/musicStore';
-import { downloadRecording } from '../utils/audio'
+import {
+  Play,
+  Pause,
+  Save,
+  Music,
+  CircleDot,
+  RotateCcw,
+  Trash2,
+  Edit2,
+  Check,
+  X,
+  Download,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import type { Recording } from "../store/musicStore";
+import { downloadRecording } from "../utils/audio";
 
 // Helper function to convert Base64 to ArrayBuffer
 const base64ToBuffer = (base64: string): ArrayBuffer => {
@@ -52,9 +64,13 @@ const Composition = () => {
   const colonneRef = useRef(0);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
-  const [editingRecordingId, setEditingRecordingId] = useState<string | null>(null);
-  const [newRecordingName, setNewRecordingName] = useState('');
+  const [editingRecordingId, setEditingRecordingId] = useState<string | null>(
+    null
+  );
+  const [newRecordingName, setNewRecordingName] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const [bpm, setBpm] = useState(120); //bpm par defaut
 
   // Initialize AudioContext and load recordings on first user interaction
   useEffect(() => {
@@ -75,23 +91,23 @@ const Composition = () => {
         setIsInitialized(true);
 
         // Remove event listeners after initialization
-        document.removeEventListener('click', handleFirstInteraction);
-        document.removeEventListener('keydown', handleFirstInteraction);
+        document.removeEventListener("click", handleFirstInteraction);
+        document.removeEventListener("keydown", handleFirstInteraction);
       } catch (error) {
-        console.error('Error during initialization:', error);
-        setError('Failed to initialize audio system. Please try again.');
+        console.error("Error during initialization:", error);
+        setError("Failed to initialize audio system. Please try again.");
       } finally {
         setIsInitializing(false);
       }
     };
 
     // Add event listeners for user interaction
-    document.addEventListener('click', handleFirstInteraction);
-    document.addEventListener('keydown', handleFirstInteraction);
+    document.addEventListener("click", handleFirstInteraction);
+    document.addEventListener("keydown", handleFirstInteraction);
 
     return () => {
-      document.removeEventListener('click', handleFirstInteraction);
-      document.removeEventListener('keydown', handleFirstInteraction);
+      document.removeEventListener("click", handleFirstInteraction);
+      document.removeEventListener("keydown", handleFirstInteraction);
     };
   }, [initializeInstrument, loadRecordings, isInitializing]);
 
@@ -224,7 +240,7 @@ const Composition = () => {
         setPause(false);
 
         if (recordWhilePlaying && recording) {
-          stopRecording().then(data => {
+          stopRecording().then((data) => {
             if (data) {
               addRecording({
                 id: data.id,
@@ -233,13 +249,13 @@ const Composition = () => {
                 duration: data.duration,
                 createdAt: data.createdAt || new Date().toISOString(),
                 notes: data.notes,
-                audioUrl: data.audioUrl
+                audioUrl: data.audioUrl,
               });
             }
           });
         }
       }
-    }, 200);
+    }, 60000 / bpm); //conversion de millisecondes a bpm
   };
 
   const pausePianoRoll = () => {
@@ -258,10 +274,12 @@ const Composition = () => {
       setPause(false);
 
       if (recordWhilePlaying && recording) {
-        stopRecording().then(data => {
+        stopRecording().then((data) => {
           if (data) {
             const newRecording = {
-              id: `rec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              id: `rec-${Date.now()}-${Math.random()
+                .toString(36)
+                .substr(2, 9)}`,
               userId: data.userId,
               name: `Composition ${recordings.length + 1}`,
               duration: data.duration,
@@ -298,21 +316,20 @@ const Composition = () => {
 
   const handleDeleteRecording = (recordingId: string | undefined) => {
     if (!recordingId) {
-      console.warn('Tried to delete a recording with undefined ID');
+      console.warn("Tried to delete a recording with undefined ID");
       return;
     }
 
-    if (window.confirm('Are you sure you want to delete this recording?')) {
+    if (window.confirm("Are you sure you want to delete this recording?")) {
       deleteRecording(recordingId);
     }
   };
-
 
   const handleRenameRecording = (recordingId: string, newName: string) => {
     if (newName.trim()) {
       updateRecordingName(recordingId, newName.trim());
       setEditingRecordingId(null);
-      setNewRecordingName('');
+      setNewRecordingName("");
     }
   };
 
@@ -331,20 +348,19 @@ const Composition = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white/10 p-6 rounded-lg text-center">
             <h2 className="text-xl font-semibold text-white mb-4">
-              {isInitializing ? 'Initializing audio system...' : 'Click anywhere to start'}
+              {isInitializing
+                ? "Initializing audio system..."
+                : "Click anywhere to start"}
             </h2>
             <p className="text-white/80">
               {isInitializing
-                ? 'Please wait while we set up the audio system...'
-                : 'The audio system needs your permission to start'}
+                ? "Please wait while we set up the audio system..."
+                : "The audio system needs your permission to start"}
             </p>
-            {error && (
-              <p className="text-red-400 mt-2">{error}</p>
-            )}
+            {error && <p className="text-red-400 mt-2">{error}</p>}
           </div>
         </div>
-      )}
-      {" "}
+      )}{" "}
       {/*Vertical stacking*/}
       <h2 className="text-3xl font-bold text-white mb-8">
         Studio de Composition
@@ -353,8 +369,9 @@ const Composition = () => {
         <div className="flex gap-4">
           <motion.button
             onClick={handleRecordingToggle}
-            className={`px-6 py-2 rounded-lg flex items-center gap-2 transition-colors ${recording ? 'bg-red-600' : 'bg-purple-600'
-              } text-white`}
+            className={`px-6 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+              recording ? "bg-red-600" : "bg-purple-600"
+            } text-white`}
           >
             {recording ? (
               <>
@@ -425,13 +442,14 @@ const Composition = () => {
                         key={`${row}-${col}`}
                         onClick={() => changerEtatNote(row, col)}
                         className={`border border-gray-300 cursor-pointer transition-colors duration-75
-                          ${isColonneAct
-                            ? "bg-pink-400"
-                            : isActive
+                          ${
+                            isColonneAct
+                              ? "bg-pink-400"
+                              : isActive
                               ? "bg-blue-500 hover:bg-blue-600"
                               : isDarkRow
-                                ? "bg-purple-700 hover:bg-purple-600"
-                                : "bg-purple-500 hover:bg-purple-600"
+                              ? "bg-purple-700 hover:bg-purple-600"
+                              : "bg-purple-500 hover:bg-purple-600"
                           }`}
                       />
                     );
@@ -473,16 +491,15 @@ const Composition = () => {
 
           <div className="space-y-6">
             <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
-              <h3 className="text-xl font-semibold text-white mb-4">
-                Lecture
-              </h3>
+              <h3 className="text-xl font-semibold text-white mb-4">Lecture</h3>
               <div className="space-y-2">
                 <button
                   onClick={playing ? stopPianoRoll : playPianoRoll}
-                  className={`w-full py-2 rounded ${playing
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-green-600 hover:bg-green-700"
-                    } text-white`}
+                  className={`w-full py-2 rounded ${
+                    playing
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-green-600 hover:bg-green-700"
+                  } text-white`}
                 >
                   {playing ? "Arrêter la lecture" : "Démarrer la lecture"}
                 </button>
@@ -507,82 +524,107 @@ const Composition = () => {
                     key={rec.id || rec.name || Math.random().toString(36)}
                     className="bg-purple-500/10 hover:bg-purple-500/20 p-3 rounded-lg flex justify-between items-center"
                   >
-                        <div className="flex-1">
-                          {editingRecordingId === rec.id ? (
-                            <input
-                              type="text"
-                              value={newRecordingName}
-                              onChange={(e) => setNewRecordingName(e.target.value)}
-                              className="bg-white/10 text-white px-2 py-1 rounded w-full"
-                              autoFocus
-                            />
-                          ) : (
-                            <p className="text-purple-200 font-medium">{rec.name}</p>
-                          )}
-                          <p className="text-purple-300 text-sm">
-                            {new Date(rec.createdAt).toLocaleDateString()} • {rec.duration}
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
+                    <div className="flex-1">
+                      {editingRecordingId === rec.id ? (
+                        <input
+                          type="text"
+                          value={newRecordingName}
+                          onChange={(e) => setNewRecordingName(e.target.value)}
+                          className="bg-white/10 text-white px-2 py-1 rounded w-full"
+                          autoFocus
+                        />
+                      ) : (
+                        <p className="text-purple-200 font-medium">
+                          {rec.name}
+                        </p>
+                      )}
+                      <p className="text-purple-300 text-sm">
+                        {new Date(rec.createdAt).toLocaleDateString()} •{" "}
+                        {rec.duration}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handlePlayRecording(rec)}
+                        className="p-2 text-purple-400 hover:text-purple-300"
+                      >
+                        {playing ? (
+                          <Pause className="w-5 h-5" />
+                        ) : (
+                          <Play className="w-5 h-5" />
+                        )}
+                      </button>
+                      {editingRecordingId === rec.id ? (
+                        <>
                           <button
-                            onClick={() => handlePlayRecording(rec)}
+                            onClick={() =>
+                              handleRenameRecording(rec.id, newRecordingName)
+                            }
+                            className="p-2 text-green-400 hover:text-green-300"
+                          >
+                            <Check className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingRecordingId(null);
+                              setNewRecordingName("");
+                            }}
+                            className="p-2 text-red-400 hover:text-red-300"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingRecordingId(rec.id);
+                              setNewRecordingName(rec.name);
+                            }}
+                            className="p-2 text-blue-400 hover:text-blue-300"
+                          >
+                            <Edit2 className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => downloadRecording(rec)}
                             className="p-2 text-purple-400 hover:text-purple-300"
                           >
-                            {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                            <Download className="w-5 h-5" />
                           </button>
-                          {editingRecordingId === rec.id ? (
-                            <>
-                              <button
-                                onClick={() => handleRenameRecording(rec.id, newRecordingName)}
-                                className="p-2 text-green-400 hover:text-green-300"
-                              >
-                                <Check className="w-5 h-5" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditingRecordingId(null);
-                                  setNewRecordingName('');
-                                }}
-                                className="p-2 text-red-400 hover:text-red-300"
-                              >
-                                <X className="w-5 h-5" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setEditingRecordingId(rec.id);
-                                  setNewRecordingName(rec.name);
-                                }}
-                                className="p-2 text-blue-400 hover:text-blue-300"
-                              >
-                                <Edit2 className="w-5 h-5" />
-                              </button>
-                              <button
-                                onClick={() => downloadRecording(rec)}
-                                className="p-2 text-purple-400 hover:text-purple-300"
-                              >
-                                <Download className="w-5 h-5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteRecording(rec.id)}
-                                className="p-2 text-red-400 hover:text-red-300"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                          <button
+                            onClick={() => handleDeleteRecording(rec.id)}
+                            className="p-2 text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
+                ))}
+              </div>
             </div>
+            <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
+              <div className="space-y-4">
+                <label className="block text-white font-medium">
+                  Tempo: {bpm} BPM
+                </label>
+                <input
+                  type="range"
+                  min={40}
+                  max={400}
+                  step={1}
+                  value={bpm}
+                  onChange={(e) => setBpm(parseInt(e.target.value))}
+                  className="w-full accent-purple-500"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-      );
+    </div>
+  );
 };
 
-      export default Composition;
+export default Composition;
