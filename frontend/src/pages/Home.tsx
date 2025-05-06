@@ -1,6 +1,7 @@
 import React from 'react'
 import { Music, Brain, KeyboardMusic, AudioWaveform as Waveform, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
+import Navigation from './components/Navigation'
 
 interface HomeProps {
   onGetStarted: () => void
