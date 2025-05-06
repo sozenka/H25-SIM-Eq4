@@ -10,7 +10,16 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://h25-sim-eq4.vercel.app/' // replace with your actual frontend URL
+  ],
+  methods: ['GET', 'POST', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // ✅ MongoDB connection
@@ -33,19 +42,20 @@ app.post('/api/recordings', asyncHandler(async (req: Request, res: Response) => 
   const decoded = token && verifyToken(token);
   if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { title, notes, audioUrl, duration } = req.body;
+  const { name, notes, duration, audioPath } = req.body;
 
-  if (!audioUrl || !duration || !notes) {
+  if (!duration || !notes || !audioPath) {
     return res.status(400).json({ error: 'Missing required fields' });
-  }
+  }  
 
   const recording = new Recording({
     userId: decoded.id,
-    name: title,
+    name: name,
     notes,
     duration,
+    audioPath,
     createdAt: new Date()
-  });
+  });  
 
   await recording.save();
 

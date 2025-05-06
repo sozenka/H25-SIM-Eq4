@@ -21,13 +21,13 @@ const Settings = () => {
 
   return (
     <div className="max-w-xl mx-auto mt-10 px-4 text-white">
-      <h1 className="text-3xl font-bold mb-6 text-center">Account Settings</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">Paramètres de l'utilisateur</h1>
 
       <div className="space-y-6">
         {[
-          { label: "Username", value: currentUser.username, type: "username" },
-          { label: "Email", value: currentUser.email, type: "email" },
-          { label: "Password", value: "••••••••", type: "password" },
+          { label: "Nom d'utilisateur", value: currentUser.username, type: "username" },
+          { label: "Courriel", value: currentUser.email, type: "email" },
+          { label: "Mot de passe", value: "••••••••", type: "password" },
         ].map(({ label, value, type }) => (
           <div key={type} className="bg-white/5 p-4 rounded-2xl flex justify-between items-center border border-white/10">
             <div>

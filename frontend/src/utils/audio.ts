@@ -7,28 +7,41 @@ export const base64ToBuffer = (base64: string): ArrayBuffer => {
   }
   return buffer.buffer;
 };
-// use this in audio.ts or wherever it's imported from
-import type { Recording } from '../store/musicStore'; // if it's in another file
+import type { Recording } from '../store/musicStore';
 
 export const downloadRecording = async (recording: Recording) => {
-  if (!recording.audioUrl) {
-    alert("No audio URL found for this recording.");
-    return;
-  }
+  const { name, audioData, audioUrl } = recording;
+  const filename = `${name || 'recording'}.wav`;
 
   try {
-    const response = await fetch(recording.audioUrl);
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${recording.name || 'recording'}.wav`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
+    if (audioData) {
+      // If raw audio data is present, use it
+      const blob = new Blob([audioData], { type: 'audio/wav' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } else if (audioUrl) {
+      // Fallback to downloading from the URL
+      const response = await fetch(audioUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } else {
+      throw new Error('No audio URL or data available');
+    }
   } catch (err) {
     console.error('Error downloading audio:', err);
-    alert('Download failed.');
+    alert('Download failed. Please try again.');
   }
 };

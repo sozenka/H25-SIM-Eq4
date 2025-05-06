@@ -36,6 +36,7 @@ const recordingSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   name: { type: String, required: true },
   notes: [{ note: String, time: Number }],
+  audioPath: { type: String, required: true },
   duration: String,
   createdAt: { type: Date, default: Date.now }
 });
