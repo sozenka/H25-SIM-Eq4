@@ -393,12 +393,15 @@ const Composition = () => {
         </div>
 
         <label className="text-purple-300 flex items-center gap-2 text-sm">
-          <input
+          <input 
             type="checkbox"
             checked={recordWhilePlaying}
             onChange={() => setRecordWhilePlaying(!recordWhilePlaying)}
+            className="sr-only peer"
           />
-          Enregistrer pendant la lecture
+          <div className="w-11 h-6 bg-gray-400 rounded-full peer peer-checked:bg-purple-600 transition-all"></div>
+          <div className="absolute ml-1 mt w-4 h-4 bg-white rounded-full shadow-md transform peer-checked:translate-x-5 transition-all"></div>
+          <span className="ml-3 text-sm text-purple-300">Enregistrer durant la lecture</span>
         </label>
       </div>
       <div className="space-x-8 flex">
