@@ -72,7 +72,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-lg border-b border-white/10">
-        <span className="text-xl font-bold text-white">HarmonAI</span>
+        <span className="text-xl font-bold text-white">HarmonIA</span>
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"

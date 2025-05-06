@@ -31,12 +31,12 @@ const Navigation: React.FC<NavigationProps> = ({
 }) => {
   return (
     <>
-      {/* Desktop Navigation */}
+      {/* Navigation sur le desktop*/}
       <nav className="hidden md:block bg-black/30 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-white">HarmonAI</span>
+              <span className="text-xl font-bold text-white">HarmonIA</span>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -79,7 +79,7 @@ const Navigation: React.FC<NavigationProps> = ({
                     whileTap={{ scale: 0.95 }}
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>Logout</span>
+                    <span>Déconnecter</span>
                   </motion.button>
                 </div>
               ) : (
@@ -90,7 +90,7 @@ const Navigation: React.FC<NavigationProps> = ({
                   whileTap={{ scale: 0.95 }}
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>Sign In</span>
+                  <span>Se connecter</span>
                 </motion.button>
               )}
             </div>
