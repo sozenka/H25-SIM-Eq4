@@ -13,7 +13,7 @@ const PORT = Number(process.env.PORT) || 5000;
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://h25-sim-eq4.vercel.app/' // replace with your actual frontend URL
+    'https://h25-sim-eq4.vercel.app' // replace with your actual frontend URL
   ],
   methods: ['GET', 'POST', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
