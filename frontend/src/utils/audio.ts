@@ -7,42 +7,41 @@ export const base64ToBuffer = (base64: string): ArrayBuffer => {
   }
   return buffer.buffer;
 };
+import type { Recording } from '../store/musicStore';
 
-export const downloadRecording = (recording: {
-  name: string;
-  audioData?: ArrayBuffer | string;
-}) => {
-  let buffer: ArrayBuffer | null = null;
+export const downloadRecording = async (recording: Recording) => {
+  const { name, audioData, audioUrl } = recording;
+  const filename = `${name || 'recording'}.wav`;
 
-  if (!recording.audioData) {
-    alert("No audio data available for this recording.");
-    return;
-  }
-
-  if (recording.audioData instanceof ArrayBuffer) {
-    buffer = recording.audioData;
-  } else if (typeof recording.audioData === "string") {
-    try {
-      buffer = base64ToBuffer(recording.audioData);
-    } catch (error) {
-      console.error("Error decoding base64 audio data:", error);
-      alert("Failed to decode audio data.");
-      return;
+  try {
+    if (audioData) {
+      // If raw audio data is present, use it
+      const blob = new Blob([audioData], { type: 'audio/wav' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } else if (audioUrl) {
+      // Fallback to downloading from the URL
+      const response = await fetch(audioUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } else {
+      throw new Error('No audio URL or data available');
     }
+  } catch (err) {
+    console.error('Error downloading audio:', err);
+    alert('Download failed. Please try again.');
   }
-
-  if (!buffer) {
-    alert("Audio data format not recognized.");
-    return;
-  }
-
-  const blob = new Blob([buffer], { type: "audio/wav" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${recording.name}.wav`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}; 
+};

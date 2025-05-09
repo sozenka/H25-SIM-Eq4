@@ -47,40 +47,6 @@ const Recordings = () => {
     }
   }
 
-  const handleDownloadRecording = (recording: Recording) => {
-    if (!recording.audioData) {
-      alert('No audio data available for this recording');
-      return;
-    }
-
-    try {
-      // Ensure we have the correct audio data format
-      const audioData = typeof recording.audioData === 'string' 
-        ? base64ToBuffer(recording.audioData)
-        : recording.audioData;
-
-      // Create a blob with the correct MIME type
-      const blob = new Blob([audioData], { type: 'audio/webm' });
-      const url = URL.createObjectURL(blob);
-      
-      // Create a temporary link element
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${recording.name || 'recording'}.webm`;
-      
-      // Append to body, click, and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the URL object
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading recording:', error);
-      alert('Failed to download recording. Please try again.');
-    }
-  };
-
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
       <h2 className="text-3xl font-bold text-white mb-8">Mes Enregistrements</h2>
@@ -101,7 +67,7 @@ const Recordings = () => {
           ) : (
             recordings.map((recording) => (
               <motion.div
-                key={recording.id}
+                key={recording.id || recording.name || Math.random().toString(36)}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}

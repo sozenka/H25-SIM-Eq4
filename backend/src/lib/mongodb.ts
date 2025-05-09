@@ -1,9 +1,11 @@
 import mongoose from 'mongoose';
 import * as bcrypt from 'bcryptjs'
 import * as jwt from 'jsonwebtoken'
+import dotenv from 'dotenv';
+dotenv.config();
 
 const MONGODB_URI = 'mongodb+srv://sozenka:xfDqdhFOvdTvOSf0@cluster0.pqkukyq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
-const JWT_SECRET = 'a9dbe2e4e9b3e44314407f0f155ffe5947aa62f7b6eb447b3ba369edd0fe9757fb99942a55df4b0714d12ff6e66790d0dff0d4a3b25c7fbd3a4d4d8d0df121cb';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback';
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
@@ -34,6 +36,7 @@ const recordingSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   name: { type: String, required: true },
   notes: [{ note: String, time: Number }],
+  audioPath: { type: String, required: true },
   duration: String,
   createdAt: { type: Date, default: Date.now }
 });
@@ -48,7 +51,7 @@ userSchema.pre('save', async function(next) {
 
 // User methods
 userSchema.methods.generateAuthToken = function() {
-  return jwt.sign({ id: this._id }, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ id: this.id }, JWT_SECRET, { expiresIn: '7d' });
 };
 
 userSchema.methods.comparePassword = async function(password: string) {
@@ -71,7 +74,7 @@ export const signUp = async (email: string, username: string, password: string) 
   
   return {
     user: {
-      id: user._id,
+      id: user.id,
       email: user.email,
       username: user.username
     },
@@ -88,7 +91,7 @@ export const signIn = async (email: string, password: string) => {
   const token = user.generateAuthToken();
   return {
     user: {
-      id: user._id,
+      id: user.id,
       email: user.email,
       username: user.username
     },

@@ -3,13 +3,14 @@ import { Upload, Link, Music, Play, Pause, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AudioVisualizer from '../components/AudioVisualizer'
 import { useMusicStore } from '../store/musicStore'
-
+import type { Recording } from '../store/musicStore'
+import { supabase } from '../store/musicStore';
 const SoundAnalysis = () => {
   const { currentScale, recordings, analyzeAudio } = useMusicStore()
   const [audioUrl, setAudioUrl] = useState<string>('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
-  const [youtubeUrl, setYoutubeUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [audioBuffer, setAudioBuffer] = useState<ArrayBuffer | null>(null)
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [analysis, setAnalysis] = useState<{
@@ -40,50 +41,64 @@ const SoundAnalysis = () => {
       }
     }
   }
-
-  const handleYoutubeUrl = async () => {
-    if (!youtubeUrl) {
-      setError('Please enter a YouTube URL')
-      return
-    }
-
-    setIsLoading(true)
+  
+  const handleRecordingSelect = async (recording: Recording) => {
     try {
-      const response = await fetch('/api/youtube/audio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: youtubeUrl })
-      })
-
-      if (!response.ok) throw new Error('Failed to process YouTube URL')
-
-      const blob = await response.blob()
-      setAudioUrl(URL.createObjectURL(blob))
-      
-      // Analyze the YouTube audio
-      const arrayBuffer = await blob.arrayBuffer()
-      const result = await analyzeAudio(arrayBuffer)
-      setAnalysis(result)
-      setError('')
-    } catch (err) {
-      setError('Failed to process YouTube URL. Please try again.')
-    } finally {
-      setIsLoading(false)
+      let arrayBuffer: ArrayBuffer;
+  
+      if (recording.audioData) {
+        arrayBuffer = recording.audioData;
+      } else if (recording.audioUrl) {
+        // ✅ FIX: derive file path from audioUrl
+        const parts = recording.audioUrl.split('/recordings/');
+        if (parts.length < 2) throw new Error('Invalid audio URL format');
+  
+        const audioPath = parts[1]; // this is what Supabase expects
+  
+        const { data, error } = await supabase
+          .storage
+          .from('recordings')
+          .createSignedUrl(audioPath, 60); // signed for 60 sec
+  
+        if (error || !data?.signedUrl) {
+          throw new Error('Failed to get signed URL from Supabase');
+        }
+  
+        const response = await fetch(data.signedUrl);
+        if (!response.ok) throw new Error(`Bad response (${response.status})`);
+  
+        const contentType = response.headers.get('Content-Type');
+        if (!contentType?.startsWith('audio/')) {
+          const preview = await response.clone().text();
+          throw new Error(`Invalid content-type: ${contentType}\nPreview: ${preview.slice(0, 100)}`);
+        }
+  
+        const blob = await response.blob();
+        arrayBuffer = await blob.arrayBuffer();
+      } else {
+        throw new Error('No audio data or URL provided');
+      }
+  
+      // ✅ Decode to make sure it works before analyzing
+      const audioCtx = new AudioContext();
+      await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+  
+      const blob = new Blob([arrayBuffer], { type: 'audio/wav' });
+      setAudioUrl(URL.createObjectURL(blob));
+      setAudioBuffer(arrayBuffer);
+  
+      const result = await analyzeAudio(arrayBuffer);
+      setAnalysis(result);
+      setError('');
+    } catch (err: any) {
+      console.error('❌ Error analyzing recording:', err);
+      setError(`⚠️ ${err.message || 'Failed to decode or analyze this recording.'}`);
     }
-  }
-
-  const handleRecordingSelect = async (recording: any) => {
-    if (recording.audioData) {
-      setAudioUrl(URL.createObjectURL(new Blob([recording.audioData])))
-      const result = await analyzeAudio(recording.audioData)
-      setAnalysis(result)
-    }
-  }
-
+  };
+  
   const clearAudio = () => {
     setAudioUrl('')
     setAudioFile(null)
-    setYoutubeUrl('')
     setAnalysis(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -117,30 +132,6 @@ const SoundAnalysis = () => {
                   <span className="text-purple-200">Cliquez pour choisir un fichier audio</span>
                 </div>
               </label>
-            </div>
-          </div>
-
-          {/* YouTube URL Section */}
-          <div className="bg-black/20 p-6 rounded-lg border border-purple-500/20">
-            <h3 className="text-xl font-semibold text-white mb-4">Lien YouTube</h3>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={youtubeUrl}
-                  onChange={(e) => setYoutubeUrl(e.target.value)}
-                  placeholder="Collez le lien YouTube ici"
-                  className="flex-1 bg-black/20 border border-purple-500/20 rounded-lg px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500/50 focus:ring focus:ring-purple-500/20 transition-all"
-                />
-                <button
-                  onClick={handleYoutubeUrl}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <Link className="w-4 h-4" />
-                  {isLoading ? 'Chargement...' : 'Analyser'}
-                </button>
-              </div>
             </div>
           </div>
 
@@ -182,27 +173,6 @@ const SoundAnalysis = () => {
               <AudioVisualizer audioUrl={audioUrl} />
             </motion.div>
           )}
-
-          {/* Analysis Results */}
-          <div className="bg-black/20 p-6 rounded-lg border border-purple-500/20">
-            <h3 className="text-xl font-semibold text-white mb-4">Analyse Harmonique</h3>
-            <div className="space-y-4">
-              <div className="p-4 bg-purple-500/10 rounded-lg">
-                <h4 className="text-purple-300 font-medium mb-2">Gamme Détectée</h4>
-                <p className="text-purple-200">{analysis?.scale || currentScale} Majeur</p>
-              </div>
-              <div className="p-4 bg-purple-500/10 rounded-lg">
-                <h4 className="text-purple-300 font-medium mb-2">Accords Identifiés</h4>
-                <p className="text-purple-200">
-                  {analysis?.chords ? analysis.chords.join(' - ') : 'En attente d\'analyse...'}
-                </p>
-              </div>
-              <div className="p-4 bg-purple-500/10 rounded-lg">
-                <h4 className="text-purple-300 font-medium mb-2">Tempo</h4>
-                <p className="text-purple-200">{analysis?.tempo || '---'} BPM</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
