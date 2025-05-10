@@ -320,7 +320,7 @@ const Composition = () => {
       return;
     }
 
-    if (window.confirm("Are you sure you want to delete this recording?")) {
+    if (window.confirm("Voulez-vous vraiment supprimer cet enregistrement ?")) {
       deleteRecording(recordingId);
     }
   };
@@ -349,13 +349,14 @@ const Composition = () => {
           <div className="bg-white/10 p-6 rounded-lg text-center">
             <h2 className="text-xl font-semibold text-white mb-4">
               {isInitializing
-                ? "Initializing audio system..."
-                : "Click anywhere to start"}
+                ? "Initialisation du système audio..."
+                : "Cliquer pour démarrer"}
             </h2>
             <p className="text-white/80">
               {isInitializing
-                ? "Please wait while we set up the audio system..."
-                : "The audio system needs your permission to start"}
+                ? "Veuillez patienter pendant que nous installons le système audio..."
+                : "Le système audio a besoin de votre autorisation pour démarrer"
+              }
             </p>
             {error && <p className="text-red-400 mt-2">{error}</p>}
           </div>

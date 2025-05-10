@@ -2,12 +2,22 @@ import React from 'react'
 import { Music, Brain, KeyboardMusic, AudioWaveform as Waveform, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Navigation from './components/Navigation'
+import { User } from '@supabase/supabase-js'
 
 interface HomeProps {
+  user: User | null
   onGetStarted: () => void
+  setCurrentPage: (page: string) => void
 }
 
-const Home: React.FC<HomeProps> = ({ onGetStarted }) => {
+const Home: React.FC<HomeProps> = ({ user, onGetStarted, setCurrentPage }) => {
+  const handleStartComposition = () => {
+    if (user) {
+      setCurrentPage('composition');
+    } else {
+      onGetStarted();
+    }
+  };
   return (
     <div className="max-w-6xl mx-auto">
       <motion.div 
@@ -77,7 +87,7 @@ const Home: React.FC<HomeProps> = ({ onGetStarted }) => {
         className="text-center space-y-4"
       >
         <motion.button
-          onClick={onGetStarted}
+          onClick={handleStartComposition}
           className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center mx-auto gap-2 group"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
