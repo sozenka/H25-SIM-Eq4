@@ -53,7 +53,11 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <Home onGetStarted={() => setIsAuthModalOpen(true)} />
+        return <Home 
+        user={user}
+        onGetStarted={() => setIsAuthModalOpen(true)} 
+        setCurrentPage={setCurrentPage}
+        />
       case 'composition':
         return user ? <Composition /> : <Home onGetStarted={() => setIsAuthModalOpen(true)} />
       case 'ai':
@@ -65,7 +69,9 @@ function App() {
       case 'settings':
         return user ? <Settings /> : <Home onGetStarted={() => setIsAuthModalOpen(true)} />
       default:
-        return <Home onGetStarted={() => setIsAuthModalOpen(true)} />
+        return <Home 
+        onGetStarted={() => setIsAuthModalOpen(true)} 
+        />
     }
   }
 

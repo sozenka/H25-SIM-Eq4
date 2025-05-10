@@ -85,7 +85,7 @@ export const signUp = async (email: string, username: string, password: string) 
 export const signIn = async (email: string, password: string) => {
   const user = await User.findOne({ email });
   if (!user || !(await user.comparePassword(password))) {
-    throw new Error('Invalid email or password');
+    throw new Error('Courriel ou mot de passe incorrect');
   }
   
   const token = user.generateAuthToken();
