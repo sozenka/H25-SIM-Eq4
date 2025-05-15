@@ -94,8 +94,8 @@ const Composition = () => {
         document.removeEventListener("click", handleFirstInteraction);
         document.removeEventListener("keydown", handleFirstInteraction);
       } catch (error) {
-        console.error("Error during initialization:", error);
-        setError("Failed to initialize audio system. Please try again.");
+        console.error("Erreur lors de l'initialisation :", error);
+        setError("Échec de l'initialisation du système audio. Veuillez réessayer");
       } finally {
         setIsInitializing(false);
       }
