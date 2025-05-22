@@ -28,17 +28,57 @@ const Piano: React.FC<PianoProps> = ({ onKeyPress }) => {
   };
 
   const whiteKeys = [
-    "C", "D", "E", "F", "G", "A", "B",
-    "C", "D", "E", "F", "G", "A", "B",
-    "C", "D", "E", "F", "G", "A", "B",
-    "C", "D", "E", "F", "G", "A", "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "A",
+    "B",
   ];
 
   const blackKeys = [
-    "C#", "D#", "F#", "G#", "A#",
-    "C#", "D#", "F#", "G#", "A#",
-    "C#", "D#", "F#", "G#", "A#",
-    "C#", "D#", "F#", "G#", "A#",
+    "C#",
+    "D#",
+    "F#",
+    "G#",
+    "A#",
+    "C#",
+    "D#",
+    "F#",
+    "G#",
+    "A#",
+    "C#",
+    "D#",
+    "F#",
+    "G#",
+    "A#",
+    "C#",
+    "D#",
+    "F#",
+    "G#",
+    "A#",
   ];
 
   return (
@@ -48,7 +88,7 @@ const Piano: React.FC<PianoProps> = ({ onKeyPress }) => {
 
         return (
           <div key={index} className="relative">
-            {/* White Key */}
+            {/* white keys */}
             <button
               onClick={() => handleKeyClick(note, index, false)}
               className="w-40 h-[60px] bg-white border border-gray-300 flex items-center justify-center text-gray-600"
@@ -56,7 +96,7 @@ const Piano: React.FC<PianoProps> = ({ onKeyPress }) => {
               {note}
             </button>
 
-            {/* Black Key (conditionally rendered) */}
+            {/* black keys */}
             {isBlackKey && (
               <button
                 onClick={() => handleKeyClick(note + "#", index, true)}

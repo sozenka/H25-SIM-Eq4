@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 import type { Recording } from "../store/musicStore";
 import { downloadRecording } from "../utils/audio";
 
-// Helper function to convert Base64 to ArrayBuffer
+// fonction pour convertir Base64 en ArrayBuffer
 const base64ToBuffer = (base64: string): ArrayBuffer => {
   const binaryString = window.atob(base64);
   const len = binaryString.length;
@@ -30,7 +30,8 @@ const base64ToBuffer = (base64: string): ArrayBuffer => {
 };
 
 const Composition = () => {
-  const PIANO_HEIGHT = 40; //a changer au besoin
+  const PIANO_HEIGHT = 40;
+  //Les 3 const suivantes regroupent les numeros des keys du piano
   const nombresKeys = [
     1, 3, 5, 6, 8, 10, 12, 13, 15, 17, 18, 20, 22, 24, 25, 27, 29, 30, 32, 34,
     36, 37, 39, 41, 42, 44, 46, 48,
@@ -72,7 +73,6 @@ const Composition = () => {
 
   const [bpm, setBpm] = useState(120); //bpm par defaut
 
-  // Initialize AudioContext and load recordings on first user interaction
   useEffect(() => {
     const handleFirstInteraction = async () => {
       if (isInitializing) return;
@@ -81,27 +81,24 @@ const Composition = () => {
         setIsInitializing(true);
         setError(null);
 
-        // Initialize Tone.js and AudioContext
         await initializeInstrument();
 
-        // Load recordings after initialization
         await loadRecordings();
 
-        // Set initialized flag
         setIsInitialized(true);
 
-        // Remove event listeners after initialization
         document.removeEventListener("click", handleFirstInteraction);
         document.removeEventListener("keydown", handleFirstInteraction);
       } catch (error) {
         console.error("Erreur lors de l'initialisation :", error);
-        setError("Échec de l'initialisation du système audio. Veuillez réessayer");
+        setError(
+          "Échec de l'initialisation du système audio. Veuillez réessayer"
+        );
       } finally {
         setIsInitializing(false);
       }
     };
 
-    // Add event listeners for user interaction
     document.addEventListener("click", handleFirstInteraction);
     document.addEventListener("keydown", handleFirstInteraction);
 
@@ -123,6 +120,7 @@ const Composition = () => {
     colonneRef.current = 0;
   };
 
+  //map qui contient toutes les notes du piano
   const noteMap: string[] = [
     "C3",
     "C#3",
@@ -174,6 +172,7 @@ const Composition = () => {
     "B6",
   ];
 
+  //code pour déterminer les actives notes
   const changerEtatNote = (row: number, col: number) => {
     const carre = `${row}:${col}`;
     setActiveNotes((prev) => {
@@ -198,12 +197,9 @@ const Composition = () => {
     } else {
       trueKeyIndex = nombresBlackKeys[keyIndex - 1];
     }
-    // setActiveKeys((prev) => [...new Set([...prev, trueKeyIndex])]);
-    // setTimeout(() => {
-    //   setActiveKeys((prev) => prev.filter((k) => k !== trueKeyIndex));
-    // }, 500);
   };
 
+  //ici est la fonction pour faire jouer le piano roll
   const playPianoRoll = () => {
     if (pause) {
       setPause(false);
@@ -294,6 +290,7 @@ const Composition = () => {
     }
   };
 
+  //code pour l'enregistrement
   const handleRecordingToggle = async () => {
     if (recording) {
       const data = await stopRecording();
@@ -355,14 +352,12 @@ const Composition = () => {
             <p className="text-white/80">
               {isInitializing
                 ? "Veuillez patienter pendant que nous installons le système audio..."
-                : "Le système audio a besoin de votre autorisation pour démarrer"
-              }
+                : "Le système audio a besoin de votre autorisation pour démarrer"}
             </p>
             {error && <p className="text-red-400 mt-2">{error}</p>}
           </div>
         </div>
       )}{" "}
-      {/*Vertical stacking*/}
       <h2 className="text-3xl font-bold text-white mb-8">
         Studio de Composition
       </h2>
@@ -394,7 +389,7 @@ const Composition = () => {
         </div>
 
         <label className="text-purple-300 flex items-center gap-2 text-sm">
-          <input 
+          <input
             type="checkbox"
             checked={recordWhilePlaying}
             onChange={() => setRecordWhilePlaying(!recordWhilePlaying)}
@@ -402,15 +397,13 @@ const Composition = () => {
           />
           <div className="w-11 h-6 bg-gray-400 rounded-full peer peer-checked:bg-purple-600 transition-all"></div>
           <div className="absolute ml-1 mt w-4 h-4 bg-white rounded-full shadow-md transform peer-checked:translate-x-5 transition-all"></div>
-          <span className="ml-3 text-sm text-purple-300">Enregistrer durant la lecture</span>
+          <span className="ml-3 text-sm text-purple-300">
+            Enregistrer durant la lecture
+          </span>
         </label>
       </div>
       <div className="space-x-8 flex">
         {" "}
-        {/*Horizontal stacking*/}
-        {/* <div className="h-[700px] overflow-y-auto scroll-smooth whitespace-nowrap">
-          
-        </div> */}
         <div className="grid md:grid-cols-[4fr_1fr] gap-6">
           <div className="h-[700px] w-full overflow-x-auto overflow-y-auto scroll-smooth whitespace-nowrap">
             <div className="flex h-full">
@@ -424,7 +417,7 @@ const Composition = () => {
                 className="bg-black/20 p-4 rounded-lg border border-purple-500/20 flex-shrink-0"
                 style={{ width: "200%", height: "1700px" }}
               >
-                {/*Grid with 48 rows for the keys*/}
+                {/*Grid avec 48 rangées pour le piano roll*/}
                 <div
                   className="grid"
                   style={{
@@ -462,36 +455,6 @@ const Composition = () => {
               </div>
             </div>
           </div>
-
-          {/* <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
-            <h3 className="text-xl font-semibold text-white mb-4">
-              Instruments
-            </h3>
-            <div className="space-y-2">
-              {["Piano", "Guitare", "Synthétiseur"].map((instrument) => (
-                <button
-                  key={instrument}
-                  className="w-full text-left px-4 py-2 rounded bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 transition-colors"
-                >
-                  {instrument}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
-            <h3 className="text-xl font-semibold text-white mb-4">Gammes</h3>
-            <div className="space-y-2">
-              {["Majeure", "Mineure", "Pentatonique"].map((scale) => (
-                <button
-                  key={scale}
-                  className="w-full text-left px-4 py-2 rounded bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 transition-colors"
-                >
-                  {scale}
-                </button>
-              ))}
-            </div>
-          </div> */}
 
           <div className="space-y-6">
             <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
