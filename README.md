@@ -30,7 +30,7 @@ cd H25-SIM-Eq4
 npm install
 ```
 
-### 3. Lancer le frontend (Serveur Vite)
+### 3. Lancer le frontend
 
 ```bash
 cd frontend
@@ -38,10 +38,12 @@ npm install
 npm run dev
 ```
 
-### 4. Lancer le backend (Serveur Express en TypeScript)
+### 4. Lancer le backend
 
 ```bash
 cd backend
 npm install
 npm run dev
 ```
+
+## Site accessible également à https://h25-sim-eq4.vercel.app
