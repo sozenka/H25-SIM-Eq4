@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { handleSignUp, handleSignIn } from './src/lib/api/auth';
 import { Recording, verifyToken } from './src/lib/mongodb';
+import { User } from './src/lib/mongodb';
 
 dotenv.config();
 
@@ -127,7 +128,6 @@ app.patch('/api/recordings/:id', asyncHandler(async (req: Request, res: Response
   res.status(200).json({ message: 'Recording renamed', recording: updated });
 }));
 
-// In server.ts or wherever your auth routes are handled
 app.patch('/api/user/update', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   const decoded = token && verifyToken(token);
