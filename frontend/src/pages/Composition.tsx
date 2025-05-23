@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 import type { Recording } from "../store/musicStore";
 import { downloadRecording } from "../utils/audio";
 
-// fonction pour convertir Base64 en ArrayBuffer
+// Fonction pour convertir Base64 en ArrayBuffer
 const base64ToBuffer = (base64: string): ArrayBuffer => {
   const binaryString = window.atob(base64);
   const len = binaryString.length;
@@ -31,7 +31,7 @@ const base64ToBuffer = (base64: string): ArrayBuffer => {
 
 const Composition = () => {
   const PIANO_HEIGHT = 40;
-  //Les 3 const suivantes regroupent les numeros des keys du piano
+  // Les 3 constantes suivantes regroupent les numéros des touches du piano
   const nombresKeys = [
     1, 3, 5, 6, 8, 10, 12, 13, 15, 17, 18, 20, 22, 24, 25, 27, 29, 30, 32, 34,
     36, 37, 39, 41, 42, 44, 46, 48,
@@ -71,7 +71,7 @@ const Composition = () => {
   const [newRecordingName, setNewRecordingName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const [bpm, setBpm] = useState(120); //bpm par defaut
+  const [bpm, setBpm] = useState(120); // BPM par défaut
 
   useEffect(() => {
     const handleFirstInteraction = async () => {
@@ -108,6 +108,7 @@ const Composition = () => {
     };
   }, [initializeInstrument, loadRecordings, isInitializing]);
 
+  // Réinitialiser le piano roll
   const resetPianoRoll = () => {
     setActiveNotes(new Set());
     setColonneActuelle(null);
@@ -120,7 +121,7 @@ const Composition = () => {
     colonneRef.current = 0;
   };
 
-  //map qui contient toutes les notes du piano
+  // Map qui contient toutes les notes du piano
   const noteMap: string[] = [
     "C3",
     "C#3",
@@ -172,7 +173,7 @@ const Composition = () => {
     "B6",
   ];
 
-  //code pour déterminer les actives notes
+  // Code pour déterminer les notes actives
   const changerEtatNote = (row: number, col: number) => {
     const carre = `${row}:${col}`;
     setActiveNotes((prev) => {
@@ -199,7 +200,7 @@ const Composition = () => {
     }
   };
 
-  //ici est la fonction pour faire jouer le piano roll
+  // Fonction pour faire jouer le piano roll
   const playPianoRoll = () => {
     if (pause) {
       setPause(false);
@@ -251,340 +252,222 @@ const Composition = () => {
           });
         }
       }
-    }, 60000 / bpm); //conversion de millisecondes a bpm
+    }, (60 / bpm) * 1000);
   };
 
+  // Mettre en pause le piano roll
   const pausePianoRoll = () => {
     if (intervalle.current) {
       clearInterval(intervalle.current);
-      setPause(true);
-      setPlaying(false);
+      intervalle.current = null;
     }
+    setPause(true);
+    setPlaying(false);
   };
 
+  // Arrêter le piano roll
   const stopPianoRoll = () => {
     if (intervalle.current) {
       clearInterval(intervalle.current);
-      setColonneActuelle(null);
-      setPlaying(false);
-      setPause(false);
-
-      if (recordWhilePlaying && recording) {
-        stopRecording().then((data) => {
-          if (data) {
-            const newRecording = {
-              id: `rec-${Date.now()}-${Math.random()
-                .toString(36)
-                .substr(2, 9)}`,
-              userId: data.userId,
-              name: `Composition ${recordings.length + 1}`,
-              duration: data.duration,
-              createdAt: new Date().toISOString(),
-              notes: data.notes,
-              audioUrl: data.audioUrl,
-            };
-            addRecording(newRecording);
-          }
-        });
-      }
+      intervalle.current = null;
     }
+    setColonneActuelle(null);
+    setPlaying(false);
+    setPause(false);
+    colonneRef.current = 0;
   };
 
-  //code pour l'enregistrement
+  // Gérer l'enregistrement
   const handleRecordingToggle = async () => {
     if (recording) {
       const data = await stopRecording();
       if (data) {
-        const newRecording = {
-          id: `rec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        addRecording({
+          id: data.id,
           userId: data.userId,
           name: `Composition ${recordings.length + 1}`,
           duration: data.duration,
-          createdAt: new Date().toISOString(),
+          createdAt: data.createdAt || new Date().toISOString(),
           notes: data.notes,
           audioUrl: data.audioUrl,
-        };
-        addRecording(newRecording);
+        });
       }
     } else {
       startRecording();
     }
   };
 
+  // Supprimer un enregistrement
   const handleDeleteRecording = (recordingId: string | undefined) => {
-    if (!recordingId) {
-      console.warn("Tried to delete a recording with undefined ID");
-      return;
-    }
-
-    if (window.confirm("Voulez-vous vraiment supprimer cet enregistrement ?")) {
+    if (recordingId) {
       deleteRecording(recordingId);
     }
   };
 
+  // Renommer un enregistrement
   const handleRenameRecording = (recordingId: string, newName: string) => {
-    if (newName.trim()) {
-      updateRecordingName(recordingId, newName.trim());
-      setEditingRecordingId(null);
-      setNewRecordingName("");
-    }
+    updateRecordingName(recordingId, newName);
+    setEditingRecordingId(null);
   };
 
+  // Jouer un enregistrement
   const handlePlayRecording = (recording: Recording) => {
-    if (playing) {
-      setPlaying(false);
-      return;
-    }
-
     playRecording(recording);
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-purple-500/20">
-      {!isInitialized && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white/10 p-6 rounded-lg text-center">
-            <h2 className="text-xl font-semibold text-white mb-4">
-              {isInitializing
-                ? "Initialisation du système audio..."
-                : "Cliquer pour démarrer"}
-            </h2>
-            <p className="text-white/80">
-              {isInitializing
-                ? "Veuillez patienter pendant que nous installons le système audio..."
-                : "Le système audio a besoin de votre autorisation pour démarrer"}
-            </p>
-            {error && <p className="text-red-400 mt-2">{error}</p>}
-          </div>
-        </div>
-      )}{" "}
-      <h2 className="text-3xl font-bold text-white mb-8">
-        Studio de Composition
-      </h2>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex gap-4">
-          <motion.button
-            onClick={handleRecordingToggle}
-            className={`px-6 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-              recording ? "bg-red-600" : "bg-purple-600"
-            } text-white`}
-          >
-            {recording ? (
-              <>
-                <Save className="w-5 h-5" /> Sauvegarder
-              </>
-            ) : (
-              <>
-                <Music className="w-5 h-5" /> Enregistrer
-              </>
-            )}
-          </motion.button>
-
-          <motion.button
-            onClick={resetPianoRoll}
-            className="px-6 py-2 rounded-lg flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-          >
-            <RotateCcw className="w-5 h-5" /> Réinitialiser
-          </motion.button>
-        </div>
-
-        <label className="text-purple-300 flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={recordWhilePlaying}
-            onChange={() => setRecordWhilePlaying(!recordWhilePlaying)}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-gray-400 rounded-full peer peer-checked:bg-purple-600 transition-all"></div>
-          <div className="absolute ml-1 mt w-4 h-4 bg-white rounded-full shadow-md transform peer-checked:translate-x-5 transition-all"></div>
-          <span className="ml-3 text-sm text-purple-300">
-            Enregistrer durant la lecture
-          </span>
-        </label>
-      </div>
-      <div className="space-x-8 flex">
-        {" "}
-        <div className="grid md:grid-cols-[4fr_1fr] gap-6">
-          <div className="h-[700px] w-full overflow-x-auto overflow-y-auto scroll-smooth whitespace-nowrap">
-            <div className="flex h-full">
-              {/*Piano container*/}
-              <div className="flex-shrink-0 min-h-[700px]">
-                <Piano onKeyPress={handleKeyPress} />
-              </div>
-
-              {/*Layers container*/}
-              <div
-                className="bg-black/20 p-4 rounded-lg border border-purple-500/20 flex-shrink-0"
-                style={{ width: "200%", height: "1700px" }}
-              >
-                {/*Grid avec 48 rangées pour le piano roll*/}
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-auto p-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Piano Roll */}
+            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+              <h2 className="text-xl font-semibold mb-4">Piano Roll</h2>
+              <div className="relative">
                 <div
-                  className="grid"
+                  className="grid gap-1"
                   style={{
-                    gridTemplateColumns: "repeat(100, 35px)",
-                    gridTemplateRows: "repeat(48, 35px)",
+                    gridTemplateColumns: `repeat(100, 1fr)`,
+                    gridTemplateRows: `repeat(${noteMap.length}, ${PIANO_HEIGHT}px)`,
                   }}
                 >
-                  {Array.from({ length: 48 * 100 }).map((_, index) => {
-                    const row = Math.floor(index / 100); //pour verifier la rangee du carre
-                    const col = index % 100;
-                    const carre = `${row}:${col}`;
-                    const isDarkRow = nombresBlackKeys.includes(row + 1);
-                    const isActive = activeNotes.has(carre);
-
-                    const isColonneAct = col == colonneActuelle;
-
-                    return (
-                      <div
-                        key={`${row}-${col}`}
-                        onClick={() => changerEtatNote(row, col)}
-                        className={`border border-gray-300 cursor-pointer transition-colors duration-75
-                          ${
-                            isColonneAct
-                              ? "bg-pink-400"
-                              : isActive
-                              ? "bg-blue-500 hover:bg-blue-600"
-                              : isDarkRow
-                              ? "bg-purple-700 hover:bg-purple-600"
-                              : "bg-purple-500 hover:bg-purple-600"
-                          }`}
-                      />
-                    );
-                  })}
+                  {noteMap.map((_, rowIndex) =>
+                    Array.from({ length: 100 }, (_, colIndex) => {
+                      const isActive = activeNotes.has(`${rowIndex}:${colIndex}`);
+                      const isCurrentCol = colonneActuelle === colIndex;
+                      return (
+                        <div
+                          key={`${rowIndex}-${colIndex}`}
+                          onClick={() => changerEtatNote(rowIndex, colIndex)}
+                          className={`border border-white/10 rounded ${
+                            isActive
+                              ? "bg-purple-500"
+                              : isCurrentCol
+                              ? "bg-purple-500/20"
+                              : "bg-white/5"
+                          } hover:bg-purple-500/30 transition-colors cursor-pointer`}
+                        />
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-6">
-            <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
-              <h3 className="text-xl font-semibold text-white mb-4">Lecture</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={playing ? stopPianoRoll : playPianoRoll}
-                  className={`w-full py-2 rounded ${
-                    playing
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-green-600 hover:bg-green-700"
-                  } text-white`}
-                >
-                  {playing ? "Arrêter la lecture" : "Démarrer la lecture"}
-                </button>
-                {playing && (
+            {/* Contrôles */}
+            <div className="space-y-6">
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h2 className="text-xl font-semibold mb-4">Contrôles</h2>
+                <div className="flex flex-wrap gap-4">
+                  <button
+                    onClick={playPianoRoll}
+                    disabled={playing}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Play className="w-5 h-5" />
+                    Jouer
+                  </button>
                   <button
                     onClick={pausePianoRoll}
-                    className="w-full py-2 rounded bg-yellow-600 hover:bg-yellow-700 text-white"
+                    disabled={!playing}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
                   >
+                    <Pause className="w-5 h-5" />
                     Pause
                   </button>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
-              <h3 className="text-xl font-semibold text-white mb-4">
-                Mes Enregistrements
-              </h3>
-              <div className="space-y-2">
-                {recordings.slice(0, 5).map((rec) => (
-                  <div
-                    key={rec.id || rec.name || Math.random().toString(36)}
-                    className="bg-purple-500/10 hover:bg-purple-500/20 p-3 rounded-lg flex justify-between items-center"
+                  <button
+                    onClick={stopPianoRoll}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
                   >
-                    <div className="flex-1">
-                      {editingRecordingId === rec.id ? (
+                    <RotateCcw className="w-5 h-5" />
+                    Arrêter
+                  </button>
+                  <button
+                    onClick={resetPianoRoll}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    Réinitialiser
+                  </button>
+                </div>
+              </div>
+
+              {/* Enregistrements */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h2 className="text-xl font-semibold mb-4">Enregistrements</h2>
+                <div className="space-y-4">
+                  {recordings.map((recording) => (
+                    <div
+                      key={recording.id}
+                      className="flex items-center justify-between bg-white/5 p-3 rounded-lg"
+                    >
+                      {editingRecordingId === recording.id ? (
                         <input
                           type="text"
                           value={newRecordingName}
                           onChange={(e) => setNewRecordingName(e.target.value)}
-                          className="bg-white/10 text-white px-2 py-1 rounded w-full"
+                          className="bg-white/10 px-2 py-1 rounded"
                           autoFocus
                         />
                       ) : (
-                        <p className="text-purple-200 font-medium">
-                          {rec.name}
-                        </p>
+                        <span className="text-white">{recording.name}</span>
                       )}
-                      <p className="text-purple-300 text-sm">
-                        {new Date(rec.createdAt).toLocaleDateString()} •{" "}
-                        {rec.duration}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handlePlayRecording(rec)}
-                        className="p-2 text-purple-400 hover:text-purple-300"
-                      >
-                        {playing ? (
-                          <Pause className="w-5 h-5" />
+                      <div className="flex gap-2">
+                        {editingRecordingId === recording.id ? (
+                          <>
+                            <button
+                              onClick={() =>
+                                handleRenameRecording(
+                                  recording.id,
+                                  newRecordingName
+                                )
+                              }
+                              className="text-green-400 hover:text-green-300"
+                            >
+                              <Check className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => setEditingRecordingId(null)}
+                              className="text-red-400 hover:text-red-300"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </>
                         ) : (
-                          <Play className="w-5 h-5" />
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingRecordingId(recording.id);
+                                setNewRecordingName(recording.name);
+                              }}
+                              className="text-blue-400 hover:text-blue-300"
+                            >
+                              <Edit2 className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handlePlayRecording(recording)}
+                              className="text-green-400 hover:text-green-300"
+                            >
+                              <Play className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRecording(recording.id)}
+                              className="text-red-400 hover:text-red-300"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => downloadRecording(recording)}
+                              className="text-purple-400 hover:text-purple-300"
+                            >
+                              <Download className="w-5 h-5" />
+                            </button>
+                          </>
                         )}
-                      </button>
-                      {editingRecordingId === rec.id ? (
-                        <>
-                          <button
-                            onClick={() =>
-                              handleRenameRecording(rec.id, newRecordingName)
-                            }
-                            className="p-2 text-green-400 hover:text-green-300"
-                          >
-                            <Check className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingRecordingId(null);
-                              setNewRecordingName("");
-                            }}
-                            className="p-2 text-red-400 hover:text-red-300"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => {
-                              setEditingRecordingId(rec.id);
-                              setNewRecordingName(rec.name);
-                            }}
-                            className="p-2 text-blue-400 hover:text-blue-300"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => downloadRecording(rec)}
-                            className="p-2 text-purple-400 hover:text-purple-300"
-                          >
-                            <Download className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRecording(rec.id)}
-                            className="p-2 text-red-400 hover:text-red-300"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
-              <div className="space-y-4">
-                <label className="block text-white font-medium">
-                  Tempo: {bpm} BPM
-                </label>
-                <input
-                  type="range"
-                  min={40}
-                  max={400}
-                  step={1}
-                  value={bpm}
-                  onChange={(e) => setBpm(parseInt(e.target.value))}
-                  className="w-full accent-purple-500"
-                />
+                  ))}
+                </div>
               </div>
             </div>
           </div>

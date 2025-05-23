@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useMusicStore } from "../store/musicStore";
 
+// Interface pour les propriétés du piano
 interface PianoProps {
   onKeyPress: (keyIndex: number, isBlackKey: boolean) => void;
 }
@@ -13,6 +14,7 @@ const Piano: React.FC<PianoProps> = ({ onKeyPress }) => {
     initializeInstrument();
   }, [initializeInstrument]);
 
+  // Vérifier si une note est dans la gamme actuelle
   const isNoteInScale = (note: string) => {
     const majorScales: { [key: string]: string[] } = {
       C: ["C", "D", "E", "F", "G", "A", "B"],
@@ -22,11 +24,13 @@ const Piano: React.FC<PianoProps> = ({ onKeyPress }) => {
     return majorScales[currentScale]?.includes(note.replace("#", "")) ?? true;
   };
 
+  // Gérer le clic sur une touche
   const handleKeyClick = (note: string, index: number, isBlackKey: boolean) => {
     playNote(`${note}${currentOctave}`);
     onKeyPress(index + 1, isBlackKey);
   };
 
+  // Touches blanches du piano
   const whiteKeys = [
     "C",
     "D",
@@ -58,6 +62,7 @@ const Piano: React.FC<PianoProps> = ({ onKeyPress }) => {
     "B",
   ];
 
+  // Touches noires du piano
   const blackKeys = [
     "C#",
     "D#",
@@ -88,7 +93,7 @@ const Piano: React.FC<PianoProps> = ({ onKeyPress }) => {
 
         return (
           <div key={index} className="relative">
-            {/* white keys */}
+            {/* Touches blanches */}
             <button
               onClick={() => handleKeyClick(note, index, false)}
               className="w-40 h-[60px] bg-white border border-gray-300 flex items-center justify-center text-gray-600"
@@ -96,7 +101,7 @@ const Piano: React.FC<PianoProps> = ({ onKeyPress }) => {
               {note}
             </button>
 
-            {/* black keys */}
+            {/* Touches noires */}
             {isBlackKey && (
               <button
                 onClick={() => handleKeyClick(note + "#", index, true)}

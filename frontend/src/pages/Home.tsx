@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Navigation from './components/Navigation'
 import { User } from '@supabase/supabase-js'
 
+// Interface pour les propriétés de la page d'accueil
 interface HomeProps {
   user: User | null
   onGetStarted: () => void
@@ -12,6 +13,7 @@ interface HomeProps {
 
 // Pour avoir accès à la page de composition, il faut être connecté
 const Home: React.FC<HomeProps> = ({ user, onGetStarted, setCurrentPage }) => {
+  // Gestion du démarrage de la composition
   const handleStartComposition = () => {
     if (user) { // Si l'utilisateur est connecté, on le redirige vers la page de composition
       setCurrentPage('composition');
@@ -19,8 +21,10 @@ const Home: React.FC<HomeProps> = ({ user, onGetStarted, setCurrentPage }) => {
       onGetStarted(); // Affiche l'authentification de connexion
     }
   };
+
   return (
     <div className="max-w-6xl mx-auto">
+      {/* En-tête principal */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -35,6 +39,7 @@ const Home: React.FC<HomeProps> = ({ user, onGetStarted, setCurrentPage }) => {
         </p>
       </motion.div>
 
+      {/* Grille des fonctionnalités */}
       <motion.div 
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -81,6 +86,7 @@ const Home: React.FC<HomeProps> = ({ user, onGetStarted, setCurrentPage }) => {
         ))}
       </motion.div>
 
+      {/* Boutons d'action */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

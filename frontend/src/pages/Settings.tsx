@@ -1,4 +1,4 @@
-// Settings.tsx
+// Paramètres.tsx
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pencil, X } from "lucide-react";
@@ -13,6 +13,7 @@ const Settings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
 
+  // Ouvrir le modal de modification
   const openModal = (type: "email" | "username" | "password") => {
     setModalType(type);
     setModalOpen(true);
@@ -21,17 +22,19 @@ const Settings = () => {
     setMessage("");
   };
 
+  // Fermer le modal de modification
   const closeModal = () => {
     setModalOpen(false);
     setTimeout(() => setModalType(null), 300);
   };
 
+  // Gérer la mise à jour des informations
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
 
     if (modalType === "password" && inputValue !== confirmPassword) {
-      setMessage("Passwords do not match.");
+      setMessage("Les mots de passe ne correspondent pas.");
       return;
     }
 
@@ -49,13 +52,13 @@ const Settings = () => {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Update failed");
+      if (!res.ok) throw new Error(data.message || "Échec de la mise à jour");
 
-      setMessage("Update successful.");
+      setMessage("Mise à jour réussie.");
       localStorage.setItem("user", JSON.stringify(data.user));
       closeModal();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "An error occurred");
+      setMessage(err instanceof Error ? err.message : "Une erreur est survenue");
     }
   };
 

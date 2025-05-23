@@ -11,10 +11,11 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
+// Configuration CORS pour autoriser les requêtes depuis le frontend
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://h25-sim-eq4.vercel.app' // replace with your actual frontend URL
+    'https://h25-sim-eq4.vercel.app' // URL du frontend
   ],
   methods: ['GET', 'POST', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -23,30 +24,30 @@ app.use(cors({
 
 app.use(express.json());
 
-// ✅ MongoDB connection
+// Connexion à MongoDB
 mongoose.connect(process.env.MONGODB_URI || '')
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+  .then(() => console.log('✅ Connexion à MongoDB établie'))
+  .catch(err => console.error('❌ Erreur de connexion à MongoDB:', err));
 
-// ✅ Async wrapper
+// Gestionnaire asynchrone pour les routes
 const asyncHandler = (
   fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
 ) => (req: Request, res: Response, next: NextFunction) => fn(req, res, next).catch(next);
 
-// ✅ Auth routes
+// Routes d'authentification
 app.post('/api/auth/signup', asyncHandler(handleSignUp));
 app.post('/api/auth/login', asyncHandler(handleSignIn));
 
-// ✅ Save recording
+// Sauvegarder un enregistrement
 app.post('/api/recordings', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   const decoded = token && verifyToken(token);
-  if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+  if (!decoded) return res.status(401).json({ error: 'Non autorisé' });
 
   const { name, notes, duration, audioPath } = req.body;
 
   if (!duration || !notes || !audioPath) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: 'Champs requis manquants' });
   }  
 
   const recording = new Recording({
@@ -61,16 +62,16 @@ app.post('/api/recordings', asyncHandler(async (req: Request, res: Response) => 
   await recording.save();
 
   res.status(201).json({
-    message: 'Recording saved successfully',
+    message: 'Enregistrement sauvegardé avec succès',
     recordingId: recording._id.toString()
   });
 }));
 
-// ✅ Fetch recordings (send `id` instead of `_id`)
+// Récupérer les enregistrements (envoie `id` au lieu de `_id`)
 app.get('/api/recordings', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   const decoded = token && verifyToken(token);
-  if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+  if (!decoded) return res.status(401).json({ error: 'Non autorisé' });
 
   const recordings = await Recording.find({ userId: decoded.id });
 
@@ -82,11 +83,11 @@ app.get('/api/recordings', asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json(result);
 }));
 
-// ✅ Delete a recording using _id
+// Supprimer un enregistrement en utilisant _id
 app.delete('/api/recordings/:id', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   const decoded = token && verifyToken(token);
-  if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+  if (!decoded) return res.status(401).json({ error: 'Non autorisé' });
 
   const { id } = req.params;
 
@@ -96,23 +97,23 @@ app.delete('/api/recordings/:id', asyncHandler(async (req: Request, res: Respons
   });
 
   if (result.deletedCount === 0) {
-    return res.status(404).json({ error: 'Recording not found or not authorized' });
+    return res.status(404).json({ error: 'Enregistrement non trouvé ou non autorisé' });
   }
 
-  res.status(200).json({ message: 'Recording deleted from DB' });
+  res.status(200).json({ message: 'Enregistrement supprimé de la base de données' });
 }));
 
-// ✅ Update a recording using _id
+// Mettre à jour un enregistrement en utilisant _id
 app.patch('/api/recordings/:id', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   const decoded = token && verifyToken(token);
-  if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+  if (!decoded) return res.status(401).json({ error: 'Non autorisé' });
 
   const { id } = req.params;
   const { name } = req.body;
 
   if (!name) {
-    return res.status(400).json({ error: 'Missing name' });
+    return res.status(400).json({ error: 'Nom manquant' });
   }
 
   const updated = await Recording.findOneAndUpdate(
@@ -122,21 +123,22 @@ app.patch('/api/recordings/:id', asyncHandler(async (req: Request, res: Response
   );
 
   if (!updated) {
-    return res.status(404).json({ error: 'Recording not found or not authorized' });
+    return res.status(404).json({ error: 'Enregistrement non trouvé ou non autorisé' });
   }
 
-  res.status(200).json({ message: 'Recording renamed', recording: updated });
+  res.status(200).json({ message: 'Enregistrement renommé', recording: updated });
 }));
 
+// Mettre à jour les informations de l'utilisateur
 app.patch('/api/user/update', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
   const decoded = token && verifyToken(token);
-  if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+  if (!decoded) return res.status(401).json({ error: 'Non autorisé' });
 
   const { field, value } = req.body;
 
   if (!['email', 'username', 'password'].includes(field)) {
-    return res.status(400).json({ error: 'Invalid field' });
+    return res.status(400).json({ error: 'Champ invalide' });
   }
 
   const updateData: any = {};
@@ -149,10 +151,10 @@ app.patch('/api/user/update', asyncHandler(async (req: Request, res: Response) =
   }
 
   const updatedUser = await User.findByIdAndUpdate(decoded.id, updateData, { new: true });
-  if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+  if (!updatedUser) return res.status(404).json({ error: 'Utilisateur non trouvé' });
 
   res.status(200).json({
-    message: 'User updated successfully',
+    message: 'Utilisateur mis à jour avec succès',
     user: {
       id: updatedUser._id,
       email: updatedUser.email,
@@ -161,18 +163,18 @@ app.patch('/api/user/update', asyncHandler(async (req: Request, res: Response) =
   });
 }));
 
-// ✅ Health check
+// Vérification de l'état du serveur
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// ✅ Global error handler
+// Gestionnaire d'erreurs global
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('❌ Server error:', err);
-  res.status(500).json({ error: 'Internal Server Error', details: err?.message || err });
+  console.error('❌ Erreur serveur:', err);
+  res.status(500).json({ error: 'Erreur Interne du Serveur', details: err?.message || err });
 });
 
-// ✅ Start server
+// Démarrage du serveur
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
+  console.log(`🚀 Serveur en cours d'exécution sur http://0.0.0.0:${PORT}`);
 });

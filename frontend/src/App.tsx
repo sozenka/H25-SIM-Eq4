@@ -9,14 +9,17 @@ import Recordings from './pages/Recordings'
 import Settings from './pages/Settings'
 import AuthModal from './components/AuthModal'
 
+// Type pour les différentes pages de l'application
 type Page = 'home' | 'composition' | 'ai' | 'analysis' | 'recordings' | 'settings'
 
 function App() {
+  // États de l'application
   const [currentPage, setCurrentPage] = useState<Page>('home')
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [user, setUser] = useState<{ id: string; email: string; username: string } | null>(null)
 
+  // Vérification de l'utilisateur stocké au chargement
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
@@ -24,6 +27,7 @@ function App() {
     }
   }, [])
 
+  // Gestion de la déconnexion
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -31,6 +35,7 @@ function App() {
     setCurrentPage('home')
   }
 
+  // Configuration des éléments de navigation
   const navItems = [
     { id: 'home', label: 'Accueil', icon: HomeIcon },
     { id: 'composition', label: 'Composition', icon: Music, requiresAuth: true },
@@ -40,6 +45,7 @@ function App() {
     { id: 'settings', label: 'Paramètres', icon: SettingsIcon, requiresAuth: true },
   ]
 
+  // Gestion de la navigation
   const handleNavigate = (page: string) => {
     const item = navItems.find(i => i.id === page)
     if (item?.requiresAuth && !user) {
@@ -50,6 +56,7 @@ function App() {
     }
   }
 
+  // Rendu conditionnel des pages
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
@@ -77,6 +84,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
+      {/* En-tête mobile */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-lg border-b border-white/10">
         <span className="text-xl font-bold text-white">HarmonIA</span>
         <button
@@ -87,6 +95,7 @@ function App() {
         </button>
       </div>
 
+      {/* Navigation principale */}
       <Navigation 
         items={navItems} 
         currentPage={currentPage} 
@@ -97,10 +106,12 @@ function App() {
         isMobileMenuOpen={isMobileMenuOpen}
       />
       
+      {/* Contenu principal */}
       <main className="container mx-auto px-4 py-8 mt-0 md:mt-0">
         {renderPage()}
       </main>
       
+      {/* Modal d'authentification */}
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 

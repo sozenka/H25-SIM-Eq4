@@ -5,12 +5,13 @@ import { createClient } from '@supabase/supabase-js';
 import { PitchDetector } from 'pitchy';
 import { adminSupabase } from '../utils/supabaseAdmin';
 
-// Create a single instance of the Supabase client
+// Instance du client Supabase
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
+// Type pour les enregistrements audio
 export interface Recording {
   id: string;
   userId: string;
@@ -23,6 +24,7 @@ export interface Recording {
   audioData?: ArrayBuffer;
 }
 
+// État de l'application musicale
 interface MusicState {
   instrument: Tone.PolySynth | null;
   recording: boolean;
@@ -62,6 +64,7 @@ let recorder: Tone.Recorder | null = null;
 let recordingChunks: BlobPart[] = [];
 let analyzerNode: AnalyserNode | null = null;
 
+// Fonction pour obtenir ou créer un AudioContext
 const getAudioContext = () => {
   if (!audioContext) {
     audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -69,6 +72,7 @@ const getAudioContext = () => {
   return audioContext;
 };
 
+// Configuration de l'enregistreur audio
 const setupRecorder = async () => {
   try {
     if (recorder) {
@@ -84,17 +88,20 @@ const setupRecorder = async () => {
     Tone.Destination.connect(recorder);
     return recorder;
   } catch (error) {
-    console.error('Error setting up recorder:', error);
+    console.error('Erreur lors de la configuration de l\'enregistreur:', error);
     throw error;
   }
 };
 
+// Conversion ArrayBuffer en Base64
+// Utilisé pour l'envoi de données audio
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   const binary = new Uint8Array(buffer);
   const bytes = Array.from(binary).map(byte => String.fromCharCode(byte));
   return btoa(bytes.join(''));
 };
 
+// Détection des accords à partir des fréquences
 const detectChords = (frequencies: Float32Array, sampleRate: number): string[] => {
   const noteFrequencies = {
     'C': 261.63, 'C#': 277.18, 'D': 293.66, 'D#': 311.13,
@@ -114,20 +121,21 @@ const detectChords = (frequencies: Float32Array, sampleRate: number): string[] =
   const detectedChords: string[] = [];
   const binSize = sampleRate / frequencies.length;
 
+  // Normalisation des fréquences dans la plage des fréquences de notes
   for (const [chordName, chordFreqs] of Object.entries(chords)) {
     let matches = 0;
     for (const freq of chordFreqs) {
       const bin = Math.round(freq / binSize);
-      if (frequencies[bin] > -60) { // Threshold for frequency detection
+      if (frequencies[bin] > -60) { // Seuil de détection
         matches++;
       }
     }
-    if (matches >= 2) { // At least 2 matching frequencies for a chord
+    if (matches >= 2) { // Si au moins 2 fréquences correspondent
       detectedChords.push(chordName);
     }
   }
 
-  return detectedChords.length > 0 ? detectedChords : ['Unknown'];
+  return detectedChords.length > 0 ? detectedChords : ['Inconnu'];
 };
 
 const detectTempo = async (audioBuffer: AudioBuffer): Promise<number> => {
@@ -143,7 +151,7 @@ const detectTempo = async (audioBuffer: AudioBuffer): Promise<number> => {
   const dataArray = new Float32Array(bufferLength);
   analyzer.getFloatFrequencyData(dataArray);
 
-  // Simple tempo detection based on RMS values
+  // Utilisation de Meyda pour l'analyse audio
   const rmsValues: number[] = [];
   const sampleLength = Math.floor(audioBuffer.length / 512);
 
@@ -160,7 +168,7 @@ const detectTempo = async (audioBuffer: AudioBuffer): Promise<number> => {
     rmsValues.push(Math.sqrt(sum / (end - start)));
   }
 
-  // Find peaks in RMS values to estimate tempo
+  // Détection des pics
   const peaks: number[] = [];
   for (let i = 1; i < rmsValues.length - 1; i++) {
     if (rmsValues[i] > rmsValues[i - 1] && rmsValues[i] > rmsValues[i + 1]) {
@@ -168,17 +176,18 @@ const detectTempo = async (audioBuffer: AudioBuffer): Promise<number> => {
     }
   }
 
-  // Calculate average time between peaks
+  // Calcul de la durée moyenne entre les pics
   const avgTimeBetweenPeaks = peaks.length > 1
     ? (peaks[peaks.length - 1] - peaks[0]) / (peaks.length - 1)
     : 0;
 
-  // Convert to BPM
+  // Conversion en BPM
   const bpm = avgTimeBetweenPeaks > 0
     ? Math.round(60 / (avgTimeBetweenPeaks * 512 / audioBuffer.sampleRate))
-    : 120; // Default fallback
-
-  return Math.min(Math.max(bpm, 60), 200); // Clamp between 60-200 BPM
+    : 120; // BPM par défaut
+    
+  // Limite le BPM entre 60 et 200
+  return Math.min(Math.max(bpm, 60), 200);
 };
 
 export const useMusicStore = create<MusicState>((set, get) => ({
@@ -196,18 +205,18 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   initializeInstrument: async () => {
     try {
-      // Get or create AudioContext first
+      // Obtenir ou créer l'AudioContext d'abord
       const ctx = getAudioContext();
 
-      // Resume AudioContext if it's suspended
+      // Reprendre l'AudioContext s'il est suspendu
       if (ctx.state === 'suspended') {
         await ctx.resume();
       }
 
-      // Start Tone.js after AudioContext is ready
+      // Démarrer Tone.js après que l'AudioContext soit prêt
       await Tone.start();
 
-      // Initialize synth
+      // Initialiser le synthétiseur
       const synth = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'triangle' },
         envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 1.5 },
@@ -216,7 +225,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       synth.volume.value = 0;
       set({ instrument: synth });
     } catch (error) {
-      console.error('Error initializing instrument:', error);
+      console.error('Erreur lors de l\'initialisation de l\'instrument:', error);
       throw error;
     }
   },
@@ -251,7 +260,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       if (get().recording) return;
 
       const userStr = localStorage.getItem('user');
-      if (!userStr) throw new Error('User must be authenticated');
+      if (!userStr) throw new Error('L\'utilisateur doit être authentifié');
 
       const user = JSON.parse(userStr);
       set({ user: { id: user.id, email: user.email || '' } });
@@ -268,7 +277,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         currentRecordingStartTime: Date.now()
       });
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error('Erreur lors du démarrage de l\'enregistrement:', error);
       throw error;
     }
   },
@@ -277,24 +286,24 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const { recorder, recordingNotes, currentRecordingStartTime, user } = get();
 
     if (!recorder) {
-      console.error('No recorder instance found');
+      console.error('Aucune instance d\'enregistreur trouvée');
       return undefined;
     }
 
     if (!get().recording) {
-      console.warn('Tried to stop recording, but no recording is active.');
+      console.warn('Tentative d\'arrêt de l\'enregistrement, mais aucun enregistrement n\'est actif.');
       return;
     }
 
     try {
-      console.log('Stopping recording with notes:', recordingNotes);
+      console.log('Arrêt de l\'enregistrement avec les notes:', recordingNotes);
       const blob = await recorder.stop();
       const audioBuffer = await blob.arrayBuffer();
-      console.log('Recording stopped, processing blob...');
+      console.log('Enregistrement arrêté, traitement du blob...');
 
       const token = localStorage.getItem('token');
       if (!token || !user) {
-        throw new Error('No authentication token or user data found');
+        throw new Error('Aucun token d\'authentification ou données utilisateur trouvés');
       }
 
       const fileName = `${user.id}_${Date.now()}.wav`;
@@ -313,7 +322,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         });
 
       if (uploadError) {
-        console.error('Failed to upload audio to Supabase:', uploadError);
+        console.error('Échec du téléchargement audio vers Supabase:', uploadError);
         throw uploadError;
       }
 
@@ -321,7 +330,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         ? ((Date.now() - currentRecordingStartTime) / 1000).toFixed(2)
         : '0';
 
-      const name = customName || `Recording ${new Date().toISOString()}`;
+      const name = customName || `Enregistrement ${new Date().toISOString()}`;
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings`, {
         method: 'POST',
@@ -339,12 +348,12 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Save error details:', errorData);
-        throw new Error('Failed to save recording');
+        console.error('Détails de l\'erreur de sauvegarde:', errorData);
+        throw new Error('Échec de la sauvegarde de l\'enregistrement');
       }
 
       const dataResponse = await response.json();
-      console.log('Save successful:', dataResponse);
+      console.log('Sauvegarde réussie:', dataResponse);
 
       set(() => ({
         recording: false,
@@ -359,12 +368,12 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         notes: recordingNotes,
         duration,
         createdAt: new Date().toISOString(),
-        audioUrl: '', // will be generated later
+        audioUrl: '', // sera généré plus tard
         audioPath: filePath,
         audioData: audioBuffer
       };
     } catch (error) {
-      console.error('Error stopping recording:', error);
+      console.error('Erreur lors de l\'arrêt de l\'enregistrement:', error);
       set(() => ({
         recording: false,
         recorder: null,
@@ -383,22 +392,22 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   deleteRecording: async (recordingId: string) => {
     try {
       if (!recordingId || typeof recordingId !== 'string') {
-        console.error('❌ Invalid recordingId provided to deleteRecording:', recordingId);
+        console.error('❌ ID d\'enregistrement invalide fourni à deleteRecording:', recordingId);
         return;
       }
 
-      // Find the recording in local state
+      // Trouver l'enregistrement dans l'état local
       const recording = get().recordings.find(r => r.id === recordingId);
       if (!recording) {
-        console.error('❌ Recording not found in local state for ID:', recordingId);
+        console.error('❌ Enregistrement non trouvé dans l\'état local pour l\'ID:', recordingId);
         return;
       }
 
-      // Delete file from Supabase Storage
+      // Supprimer le fichier de Supabase Storage
       if (recording.audioUrl) {
         const parts = recording.audioUrl.split('/recordings/');
         if (parts.length < 2) {
-          console.warn('⚠️ Invalid audioUrl format, could not parse Supabase path:', recording.audioUrl);
+          console.warn('⚠️ Format d\'URL audio invalide, impossible de parser le chemin Supabase:', recording.audioUrl);
         } else {
           const path = parts[1];
           const { error: storageError } = await supabase
@@ -407,15 +416,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
             .remove([path]);
 
           if (storageError) {
-            console.error('❌ Supabase delete error:', storageError);
+            console.error('❌ Erreur de suppression Supabase:', storageError);
             throw storageError;
           }
         }
       }
 
-      // Delete metadata from MongoDB via backend
+      // Supprimer les métadonnées de MongoDB via le backend
       const token = localStorage.getItem('token');
-      if (!token) throw new Error('❌ No auth token');
+      if (!token) throw new Error('❌ Aucun token d\'authentification');
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings/${recordingId}`, {
         method: 'DELETE',
@@ -426,17 +435,17 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || '❌ Failed to delete recording from database');
+        throw new Error(error.message || '❌ Échec de la suppression de l\'enregistrement de la base de données');
       }
 
-      // Update Zustand state
+      // Mettre à jour l'état Zustand
       set(state => ({
         recordings: state.recordings.filter(r => r.id !== recordingId)
       }));
 
-      console.log('✅ Recording deleted successfully:', recordingId);
+      console.log('✅ Enregistrement supprimé avec succès:', recordingId);
     } catch (error) {
-      console.error('❌ Error deleting recording:', error);
+      console.error('❌ Erreur lors de la suppression de l\'enregistrement:', error);
       throw error;
     }
   },
@@ -444,7 +453,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   updateRecordingName: async (recordingId: string, newName: string) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) throw new Error('No auth token');
+      if (!token) throw new Error('Aucun token d\'authentification');
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/recordings/${recordingId}`, {
         method: 'PATCH',
@@ -457,7 +466,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Failed to rename recording');
+        throw new Error(error.message || 'Échec du renommage de l\'enregistrement');
       }
 
       const updated = await response.json();
@@ -467,9 +476,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         )
       }));
 
-      console.log('✅ Renamed recording:', updated);
+      console.log('✅ Enregistrement renommé:', updated);
     } catch (err) {
-      console.error('❌ Rename failed:', err);
+      console.error('❌ Échec du renommage:', err);
     }
   },
 
@@ -487,24 +496,24 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         }
       });
 
-      if (!response.ok) throw new Error('Failed to load recordings');
+      if (!response.ok) throw new Error('Échec du chargement des enregistrements');
       const data = await response.json();
 
       const enriched = await Promise.all(
         data.map(async (recording: any) => {
           try {
             if (!recording.audioPath) {
-              console.warn(`⚠️ Skipping invalid recording: ${recording.name} (no audioPath)`);
+              console.warn(`⚠️ Ignorer l'enregistrement invalide: ${recording.name} (pas de audioPath)`);
               return null;
             }
 
             const { data: signed, error } = await supabase
               .storage
               .from('recordings')
-              .createSignedUrl(recording.audioPath, 60 * 60); // 1 hour
+              .createSignedUrl(recording.audioPath, 60 * 60); // 1 heure
 
             if (error || !signed?.signedUrl) {
-              console.warn(`❌ Could not get signed URL for ${recording.name}:`, error);
+              console.warn(`❌ Impossible d'obtenir l'URL signée pour ${recording.name}:`, error);
               return null;
             }
 
@@ -519,7 +528,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
               audioData: arrayBuffer
             };
           } catch (err) {
-            console.error(`⚠️ Failed to fetch audio for "${recording.name}":`, err);
+            console.error(`⚠️ Échec de la récupération audio pour "${recording.name}":`, err);
             return null;
           }
         })
@@ -527,16 +536,16 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
       const filtered = enriched.filter(Boolean) as Recording[];
       set({ recordings: filtered });
-      console.log(`✅ Loaded ${filtered.length} valid recordings`);
+      console.log(`✅ ${filtered.length} enregistrements valides chargés`);
     } catch (error) {
-      console.error('❌ Error loading recordings:', error);
+      console.error('❌ Erreur lors du chargement des enregistrements:', error);
     }
   },
 
   playRecording: async (recording) => {
     const { instrument } = get();
     if (!instrument) {
-      console.error('Instrument not initialized');
+      console.error('Instrument non initialisé');
       return;
     }
 
@@ -544,21 +553,21 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       await Tone.start();
       const now = Tone.now();
 
-      // Play each note at its correct time
+      // Jouer chaque note à son temps correct
       recording.notes.forEach(({ note, time }) => {
         instrument.triggerAttackRelease(note, '8n', now + time);
       });
 
       set({ playing: true });
 
-      // Set a timeout to reset `playing` state
+      // Définir un délai pour réinitialiser l'état `playing`
       const duration = Math.max(...recording.notes.map(n => n.time)) + 1;
       setTimeout(() => {
         set({ playing: false });
       }, duration * 1000);
 
     } catch (error) {
-      console.error('Error during note playback:', error);
+      console.error('Erreur lors de la lecture des notes:', error);
     }
   },
 
@@ -577,17 +586,17 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const dataArray = new Float32Array(bufferLength);
     analyzer.getFloatFrequencyData(dataArray);
 
-    // Pitch detection
+    // Détection de la hauteur
     const detector = PitchDetector.forFloat32Array(bufferLength);
     const pitch = detector.findPitch(dataArray, ctx.sampleRate);
 
-    // Scale detection based on pitch
-    const scale = pitch ? pitch[0].toFixed(2) : 'Unknown';
+    // Détection de la gamme basée sur la hauteur
+    const scale = pitch ? pitch[0].toFixed(2) : 'Inconnue';
 
-    // Chord detection
+    // Détection des accords
     const chords = detectChords(dataArray, ctx.sampleRate);
 
-    // Tempo detection
+    // Détection du tempo
     const tempo = await detectTempo(audioBuffer);
 
     return {
@@ -599,17 +608,17 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   handleRecordingToggle: async () => {
     const { recording } = get();
-    console.log('Toggling recording state:', recording);
+    console.log('Changement d\'état d\'enregistrement:', recording);
 
     if (recording) {
       try {
-        console.log('Attempting to stop recording...');
+        console.log('Tentative d\'arrêt de l\'enregistrement...');
         const data = await get().stopRecording();
 
         if (data) {
-          console.log('Recording stopped successfully:', data);
+          console.log('Enregistrement arrêté avec succès:', data);
 
-          // ✅ Add the new recording manually to Zustand
+          // ✅ Ajouter le nouvel enregistrement manuellement à Zustand
           get().addRecording(data);
 
           set(() => ({
@@ -618,18 +627,18 @@ export const useMusicStore = create<MusicState>((set, get) => ({
             currentRecordingStartTime: null
           }));
 
-          // Optional: reload all recordings to ensure backend sync
+          // Optionnel: recharger tous les enregistrements pour assurer la synchronisation avec le backend
           await get().loadRecordings();
         } else {
-          console.log('No recording data returned');
+          console.log('Aucune donnée d\'enregistrement retournée');
         }
       } catch (error) {
-        console.error('Error stopping recording:', error);
+        console.error('Erreur lors de l\'arrêt de l\'enregistrement:', error);
         throw error;
       }
     } else {
       try {
-        console.log('Starting new recording...');
+        console.log('Démarrage d\'un nouvel enregistrement...');
         await get().startRecording();
 
         set(() => ({
@@ -638,7 +647,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           currentRecordingStartTime: Date.now()
         }));
       } catch (error) {
-        console.error('Error starting recording:', error);
+        console.error('Erreur lors du démarrage de l\'enregistrement:', error);
         throw error;
       }
     }
@@ -676,7 +685,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         }, duration);
       }
     } catch (error) {
-      console.error('Error playing piano roll:', error);
+      console.error('Erreur lors de la lecture du piano roll:', error);
       throw error;
     }
   },

@@ -5,6 +5,7 @@ import AudioVisualizer from '../components/AudioVisualizer'
 import { useMusicStore } from '../store/musicStore'
 import type { Recording } from '../store/musicStore'
 import { supabase } from '../store/musicStore';
+
 const SoundAnalysis = () => {
   const { currentScale, recordings, analyzeAudio } = useMusicStore()
   const [audioUrl, setAudioUrl] = useState<string>('')
@@ -19,6 +20,7 @@ const SoundAnalysis = () => {
     tempo: number;
   } | null>(null)
 
+  // Gérer le téléchargement d'un fichier audio
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -27,21 +29,22 @@ const SoundAnalysis = () => {
         setAudioUrl(URL.createObjectURL(file))
         setError('')
         
-        // Analyze the uploaded audio
+        // Analyser l'audio téléchargé
         try {
           const arrayBuffer = await file.arrayBuffer()
           const result = await analyzeAudio(arrayBuffer)
           setAnalysis(result)
         } catch (err) {
-          console.error('Error analyzing audio:', err)
-          setError('Failed to analyze audio file')
+          console.error('Erreur lors de l\'analyse audio:', err)
+          setError('Échec de l\'analyse du fichier audio')
         }
       } else {
-        setError('Please upload an audio file (MP3, WAV, etc.)')
+        setError('Veuillez télécharger un fichier audio (MP3, WAV, etc.)')
       }
     }
   }
   
+  // Gérer la sélection d'un enregistrement
   const handleRecordingSelect = async (recording: Recording) => {
     try {
       let arrayBuffer: ArrayBuffer;
@@ -49,37 +52,37 @@ const SoundAnalysis = () => {
       if (recording.audioData) {
         arrayBuffer = recording.audioData;
       } else if (recording.audioUrl) {
-        // ✅ FIX: derive file path from audioUrl
+        // Récupérer le chemin du fichier à partir de l'URL audio
         const parts = recording.audioUrl.split('/recordings/');
-        if (parts.length < 2) throw new Error('Invalid audio URL format');
+        if (parts.length < 2) throw new Error('Format d\'URL audio invalide');
   
-        const audioPath = parts[1]; // this is what Supabase expects
+        const audioPath = parts[1]; // Ce que Supabase attend
   
         const { data, error } = await supabase
           .storage
           .from('recordings')
-          .createSignedUrl(audioPath, 60); // signed for 60 sec
+          .createSignedUrl(audioPath, 60); // Signé pour 60 secondes
   
         if (error || !data?.signedUrl) {
-          throw new Error('Failed to get signed URL from Supabase');
+          throw new Error('Échec de la récupération de l\'URL signée depuis Supabase');
         }
   
         const response = await fetch(data.signedUrl);
-        if (!response.ok) throw new Error(`Bad response (${response.status})`);
+        if (!response.ok) throw new Error(`Mauvaise réponse (${response.status})`);
   
         const contentType = response.headers.get('Content-Type');
         if (!contentType?.startsWith('audio/')) {
           const preview = await response.clone().text();
-          throw new Error(`Invalid content-type: ${contentType}\nPreview: ${preview.slice(0, 100)}`);
+          throw new Error(`Type de contenu invalide: ${contentType}\nAperçu: ${preview.slice(0, 100)}`);
         }
   
         const blob = await response.blob();
         arrayBuffer = await blob.arrayBuffer();
       } else {
-        throw new Error('No audio data or URL provided');
+        throw new Error('Aucune donnée audio ou URL fournie');
       }
   
-      // ✅ Decode to make sure it works before analyzing
+      // Décoder pour vérifier que cela fonctionne avant l'analyse
       const audioCtx = new AudioContext();
       await audioCtx.decodeAudioData(arrayBuffer.slice(0));
   
@@ -91,11 +94,12 @@ const SoundAnalysis = () => {
       setAnalysis(result);
       setError('');
     } catch (err: any) {
-      console.error('❌ Error analyzing recording:', err);
-      setError(`⚠️ ${err.message || 'Failed to decode or analyze this recording.'}`);
+      console.error('Erreur lors de l\'analyse de l\'enregistrement:', err);
+      setError(`⚠️ ${err.message || 'Échec du décodage ou de l\'analyse de cet enregistrement.'}`);
     }
   };
   
+  // Effacer l'audio
   const clearAudio = () => {
     setAudioUrl('')
     setAudioFile(null)
@@ -111,7 +115,7 @@ const SoundAnalysis = () => {
       
       <div className="grid md:grid-cols-2 gap-8">
         <div className="space-y-6">
-          {/* File Upload Section */}
+          {/* Section de téléchargement de fichier */}
           <div className="bg-black/20 p-6 rounded-lg border border-purple-500/20">
             <h3 className="text-xl font-semibold text-white mb-4">Importer un fichier audio</h3>
             <div className="space-y-4">
@@ -135,7 +139,7 @@ const SoundAnalysis = () => {
             </div>
           </div>
 
-          {/* Recordings Section */}
+          {/* Section des enregistrements */}
           <div className="bg-black/20 p-6 rounded-lg border border-purple-500/20">
             <h3 className="text-xl font-semibold text-white mb-4">Mes Enregistrements</h3>
             <div className="space-y-2">
@@ -157,7 +161,7 @@ const SoundAnalysis = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Visualization Section */}
+          {/* Section de visualisation */}
           {audioUrl && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}

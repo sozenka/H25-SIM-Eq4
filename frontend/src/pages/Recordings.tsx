@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { Recording } from '../store/musicStore'
 import { downloadRecording } from '../utils/audio'
 
-// Helper function to convert Base64 to ArrayBuffer
+// Fonction utilitaire pour convertir Base64 en ArrayBuffer
 const base64ToBuffer = (base64: string): ArrayBuffer => {
   const binaryString = window.atob(base64);
   const len = binaryString.length;
@@ -25,20 +25,23 @@ const Recordings = () => {
     loadRecordings()
   }, [loadRecordings])
 
+  // Gérer la lecture d'un enregistrement
   const handlePlayRecording = async (recording: Recording) => {
     try {
       await playRecording(recording)
     } catch (error) {
-      console.error('Error playing recording:', error)
+      console.error('Erreur lors de la lecture de l\'enregistrement:', error)
     }
   }
 
+  // Gérer la suppression d'un enregistrement
   const handleDeleteRecording = (recordingId: string) => {
-    if (window.confirm('Are you sure you want to delete this recording?')) {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cet enregistrement ?')) {
       deleteRecording(recordingId)
     }
   }
 
+  // Gérer le renommage d'un enregistrement
   const handleRenameRecording = (recordingId: string, newName: string) => {
     if (newName.trim()) {
       updateRecordingName(recordingId, newName.trim())

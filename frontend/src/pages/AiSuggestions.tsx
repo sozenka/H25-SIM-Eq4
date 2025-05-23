@@ -5,12 +5,14 @@ import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMusicStore } from '../store/musicStore';
 
+// Interface pour les messages
 interface Message {
   id: string;
   role: 'assistant' | 'user';
   content: string;
 }
 
+// Interface pour les catégories
 interface Category {
   id: string;
   title: string;
@@ -18,6 +20,7 @@ interface Category {
   options: Option[];
 }
 
+// Interface pour les options
 interface Option {
   id: string;
   label: string;
@@ -25,12 +28,14 @@ interface Option {
   followUp?: Option[];
 }
 
+// Message de bienvenue initial
 const initialMessage: Message = {
   id: 'welcome',
   role: 'assistant',
   content: "👋 Bienvenue dans l'Assistant Musical ! Je suis là pour vous aider à explorer la musique. Choisissez une catégorie ci-dessous pour commencer."
 };
 
+// Catégories et leurs options
 const categories: Category[] = [
   {
     id: 'theory',
@@ -149,6 +154,7 @@ const AiSuggestions = () => {
   const [selectedOption, setSelectedOption] = useState<Option | null>(null);
   const [showFollowUp, setShowFollowUp] = useState(false);
 
+  // Gérer la sélection d'une catégorie
   const handleCategorySelect = (category: Category) => {
     setSelectedCategory(category);
     setSelectedOption(null);
@@ -163,6 +169,7 @@ const AiSuggestions = () => {
     ]);
   };
 
+  // Gérer la sélection d'une option
   const handleOptionSelect = (option: Option) => {
     setSelectedOption(option);
     setMessages(prev => [
@@ -253,7 +260,7 @@ const AiSuggestions = () => {
                   transition={{ delay: index * 0.1 }}
                   onClick={() => handleOptionSelect(option)}
                   className={clsx(
-                    'p-4 rounded-xl border transition-all duration-300 text-left hover:scale-[1.02]',
+                    'group p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 hover:scale-[1.02]',
                     selectedOption?.id === option.id
                       ? 'bg-primary/20 border-primary shadow-lg shadow-primary/20'
                       : 'bg-background/40 border-primary/20 hover:bg-primary/10 hover:border-primary/40'
@@ -264,70 +271,64 @@ const AiSuggestions = () => {
               ))}
             </motion.div>
           )}
+        </AnimatePresence>
 
+        <AnimatePresence mode="wait">
           {showFollowUp && selectedOption?.followUp && (
             <motion.div
-              key="followup"
+              key="followUp"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
             >
-              <h3 className="text-primary-light font-medium">Pour approfondir :</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {selectedOption.followUp.map((followUpOption, index) => (
-                  <motion.button
-                    key={followUpOption.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    onClick={() => handleOptionSelect(followUpOption)}
-                    className="p-4 rounded-xl border bg-background/40 border-primary/20 hover:bg-primary/10 hover:border-primary/40 transition-all duration-300 text-left hover:scale-[1.02]"
-                  >
-                    <span className="text-white font-medium">{followUpOption.label}</span>
-                  </motion.button>
-                ))}
-              </div>
+              {selectedOption.followUp.map((option, index) => (
+                <motion.button
+                  key={option.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => handleOptionSelect(option)}
+                  className={clsx(
+                    'group p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 hover:scale-[1.02]',
+                    'bg-background/40 border-primary/20 hover:bg-primary/10 hover:border-primary/40'
+                  )}
+                >
+                  <span className="text-white font-medium">{option.label}</span>
+                </motion.button>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
 
-        <motion.div layout className="space-y-6">
+        <div className="space-y-4">
           {messages.map((message) => (
             <motion.div
               key={message.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className={clsx(
-                'flex items-start gap-4 max-w-3xl mx-auto',
-                message.role === 'user' && 'flex-row-reverse'
+                'flex gap-4 p-4 rounded-xl',
+                message.role === 'assistant'
+                  ? 'bg-primary/10 border border-primary/20'
+                  : 'bg-background/40 border border-primary/20'
               )}
             >
-              <div
-                className={clsx(
-                  'w-8 h-8 rounded-xl flex items-center justify-center',
-                  message.role === 'assistant' ? 'bg-primary' : 'bg-secondary'
-                )}
-              >
+              <div className="flex-shrink-0">
                 {message.role === 'assistant' ? (
-                  <Bot className="w-5 h-5 text-white" />
+                  <Bot className="w-6 h-6 text-primary" />
                 ) : (
-                  <User className="w-5 h-5 text-white" />
+                  <User className="w-6 h-6 text-primary-light" />
                 )}
               </div>
-              <div
-                className={clsx(
-                  'flex-1 rounded-xl p-4 backdrop-blur-sm text-white',
-                  message.role === 'assistant' ? 'bg-primary/10 border border-primary/20' : 'bg-secondary/10 border border-secondary/20'
-                )}
-              >
-                <ReactMarkdown className="prose prose-invert prose-p:text-white prose-headings:text-white prose-strong:text-white prose-code:text-primary-light max-w-none">
+              <div className="flex-1">
+                <ReactMarkdown className="prose prose-invert max-w-none">
                   {message.content}
                 </ReactMarkdown>
               </div>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

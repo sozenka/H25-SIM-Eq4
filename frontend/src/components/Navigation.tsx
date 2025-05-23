@@ -3,6 +3,7 @@ import { Music, LogIn, LogOut } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// Interface pour les éléments de navigation
 interface NavItem {
   id: string
   label: string
@@ -10,6 +11,7 @@ interface NavItem {
   requiresAuth?: boolean
 }
 
+// Interface pour les propriétés du composant Navigation
 interface NavigationProps {
   items: NavItem[]
   currentPage: string
@@ -31,7 +33,7 @@ const Navigation: React.FC<NavigationProps> = ({
 }) => {
   return (
     <>
-      {/* Navigation sur le desktop*/}
+      {/* Navigation sur ordinateur */}
       <nav className="hidden md:block bg-black/30 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -79,7 +81,7 @@ const Navigation: React.FC<NavigationProps> = ({
                     whileTap={{ scale: 0.95 }}
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>Déconnecter</span>
+                    <span>Déconnexion</span>
                   </motion.button>
                 </div>
               ) : (
@@ -90,7 +92,7 @@ const Navigation: React.FC<NavigationProps> = ({
                   whileTap={{ scale: 0.95 }}
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>Se connecter</span>
+                  <span>Connexion</span>
                 </motion.button>
               )}
             </div>
@@ -98,7 +100,7 @@ const Navigation: React.FC<NavigationProps> = ({
         </div>
       </nav>
 
-      {/* Mobile Navigation */}
+      {/* Navigation mobile */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -136,7 +138,7 @@ const Navigation: React.FC<NavigationProps> = ({
                     className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-left text-sm font-medium text-gray-300 hover:bg-purple-500/10 transition-colors"
                   >
                     <LogOut className="w-5 h-5" />
-                    <span>Logout</span>
+                    <span>Déconnexion</span>
                   </button>
                 </div>
               ) : (
@@ -146,7 +148,7 @@ const Navigation: React.FC<NavigationProps> = ({
                     className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-left text-sm font-medium bg-purple-500 text-white hover:bg-purple-600 transition-colors"
                   >
                     <LogIn className="w-5 h-5" />
-                    <span>Sign In</span>
+                    <span>Connexion</span>
                   </button>
                 </div>
               )}

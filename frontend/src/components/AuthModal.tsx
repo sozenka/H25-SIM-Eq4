@@ -3,6 +3,7 @@ import { X, Loader2, Mail, Lock, UserPlus, LogIn, Music, User, Key } from 'lucid
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
 
+// Interface pour les propriétés du modal d'authentification
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
@@ -18,6 +19,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
+  // Gestion du défilement de la page
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -40,7 +42,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       if (isSignUp) {
         if (password !== confirmPassword) {
-          throw new Error('Passwords do not match')
+          throw new Error('Les mots de passe ne correspondent pas')
         }
 
         const response = await fetch(`${API_URL}/api/auth/signup`, {
@@ -50,9 +52,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         })
 
         const data = await response.json()
-        if (!response.ok) throw new Error(data.message || 'Failed to sign up')
+        if (!response.ok) throw new Error(data.message || 'Échec de l\'inscription')
 
-        setSuccess('Account created successfully! Please sign in.')
+        setSuccess('Compte créé avec succès ! Veuillez vous connecter.')
         setTimeout(() => {
           setIsSignUp(false)
           setSuccess(null)
@@ -65,7 +67,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         })
 
         const data = await response.json()
-        if (!response.ok) throw new Error(data.message || 'Failed to sign in')
+        if (!response.ok) throw new Error(data.message || 'Échec de la connexion')
 
         localStorage.setItem('token', data.token)
         localStorage.setItem('user', JSON.stringify(data.user))
@@ -73,7 +75,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         window.location.reload()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue')
     } finally {
       setLoading(false)
     }
@@ -95,10 +97,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           exit={{ scale: 0.95, opacity: 0 }}
           className="bg-gradient-to-br from-background via-background/95 to-background/90 border border-primary/20 rounded-2xl p-8 w-full max-w-md relative overflow-hidden"
         >
-          {/* Background gradient animation */}
+          {/* Animation du dégradé d'arrière-plan */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-primary/5 animate-gradient" />
           
-          {/* Content */}
+          {/* Contenu */}
           <div className="relative z-10">
             <button
               onClick={onClose}
@@ -117,7 +119,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl" />
               </motion.div>
               <h2 className="text-3xl font-bold text-white mb-2">
-                {isSignUp ? 'Rejoindre HarmonIA' : 'Heureux de vous revoir!'}
+                {isSignUp ? 'Rejoindre HarmonIA' : 'Heureux de vous revoir !'}
               </h2>
               <p className="text-gray-400">
                 {isSignUp
@@ -174,7 +176,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full bg-black/20 border border-primary/20 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:border-primary/50 focus:ring focus:ring-primary/20 transition-all"
-                      placeholder="Confirmer mot de passe"
+                      placeholder="Confirmer le mot de passe"
                       required
                     />
                   </div>
@@ -243,12 +245,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 {isSignUp ? (
                   <>
                     <LogIn className="w-4 h-4" />
-                    Vous avez déja un compte? Connectez-vous
+                    Vous avez déjà un compte ? Connectez-vous
                   </>
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4" />
-                    Vous n'avez pas de compte? Inscrivez-vous
+                    Pas encore de compte ? Inscrivez-vous
                   </>
                 )}
               </button>
