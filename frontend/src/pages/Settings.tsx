@@ -5,18 +5,58 @@ import { Pencil, X } from "lucide-react";
 
 const Settings = () => {
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const token = localStorage.getItem("token");
 
   const [modalType, setModalType] = useState<"email" | "username" | "password" | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
 
   const openModal = (type: "email" | "username" | "password") => {
     setModalType(type);
     setModalOpen(true);
+    setInputValue("");
+    setConfirmPassword("");
+    setMessage("");
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setTimeout(() => setModalType(null), 300);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+
+    if (modalType === "password" && inputValue !== confirmPassword) {
+      setMessage("Passwords do not match.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user/update`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          field: modalType,
+          value: inputValue,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Update failed");
+
+      setMessage("Update successful.");
+      localStorage.setItem("user", JSON.stringify(data.user));
+      closeModal();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "An error occurred");
+    }
   };
 
   return (
@@ -59,25 +99,30 @@ const Settings = () => {
                 <X className="w-5 h-5" />
               </button>
 
-              <h2 className="text-xl font-semibold mb-4">Change {modalType}</h2>
-              <form className="space-y-4">
+              <h2 className="text-xl font-semibold mb-4">Modifier {modalType}</h2>
+              <form className="space-y-4" onSubmit={handleUpdate}>
                 <input
                   type={modalType === "password" ? "password" : "text"}
-                  placeholder={`New ${modalType}`}
-                  className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-white/10 focus:outline-none focus:ring focus:ring-purple-500"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder={`Nouveau ${modalType}`}
+                  className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-white/10"
                 />
                 {modalType === "password" && (
                   <input
                     type="password"
-                    placeholder="Confirm password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirmer le mot de passe"
                     className="w-full px-4 py-2 rounded-lg bg-zinc-800 border border-white/10"
                   />
                 )}
+                {message && <p className="text-sm text-red-400">{message}</p>}
                 <button
                   type="submit"
                   className="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded-lg font-semibold transition"
                 >
-                  Update {modalType}
+                  Mettre à jour
                 </button>
               </form>
             </motion.div>

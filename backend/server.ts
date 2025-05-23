@@ -127,6 +127,39 @@ app.patch('/api/recordings/:id', asyncHandler(async (req: Request, res: Response
   res.status(200).json({ message: 'Recording renamed', recording: updated });
 }));
 
+// In server.ts or wherever your auth routes are handled
+app.patch('/api/user/update', asyncHandler(async (req: Request, res: Response) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  const decoded = token && verifyToken(token);
+  if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { field, value } = req.body;
+
+  if (!['email', 'username', 'password'].includes(field)) {
+    return res.status(400).json({ error: 'Invalid field' });
+  }
+
+  const updateData: any = {};
+  updateData[field] = value;
+
+  if (field === 'password') {
+    const bcrypt = await import('bcryptjs');
+    const hashed = await bcrypt.hash(value, 10);
+    updateData[field] = hashed;
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(decoded.id, updateData, { new: true });
+  if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+
+  res.status(200).json({
+    message: 'User updated successfully',
+    user: {
+      id: updatedUser._id,
+      email: updatedUser.email,
+      username: updatedUser.username
+    }
+  });
+}));
 
 // ✅ Health check
 app.get('/health', (_req, res) => {
