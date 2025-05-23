@@ -7,7 +7,7 @@ Application web full-stack interactive qui permet aux utilisateurs de créer un 
 ### 1. Cloner le dépôt
 
 ```bash
-git clone https://github.com/ton-utilisateur/H25-SIM-Eq4.git
+git clone https://github.com/sozenka/H25-SIM-Eq4.git
 cd H25-SIM-Eq4
 ```
 
