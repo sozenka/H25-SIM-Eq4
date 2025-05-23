@@ -15,10 +15,12 @@ let ready = false;
 let gui;
 
 const typesOsc = [
+    // 4 types de bases
     'sine',
     'square',
     'triangle',
     'sawtooth',
+    // variations des 4 types de bases pour plus d'experimentation possible.
     'fatsine',
     'fatsquare',
     'fattriangle',
@@ -33,6 +35,7 @@ const typesOsc = [
     'fmsawtooth'
 ]
 
+// table de conversion des touches du clavier vers les notes associees
 const clavierVersNotes = {
     'a': 'C4',
     'w': 'C#4',
@@ -49,7 +52,7 @@ const clavierVersNotes = {
     'k': 'C5'
 };
 
-
+// fonction de p5.js
 function setup() {
     createCanvas(window.innerWidth, window.innerHeight); // plein ecran
 }
@@ -71,7 +74,7 @@ function initialiserSynth() {
             release: 1.5
         }
     });
-
+    // les attributs des effets sont constants mis a part le 'wet' pour faire en sorte que l'effet sonne toujours assez bien. valeurs choisies selon les exemples de la doc Tone.js et modifiés parfois
     distortion = new Tone.Distortion({
         distortion: 0.4,
         wet: 0
@@ -97,7 +100,7 @@ function initialiserSynth() {
         wet: 0
     });
 
-    // branchement des effets en serie
+    // branchement des effets en serie (chaque effet affecte le precedent)
 
     synth.connect(distortion);
     distortion.connect(chorus);
@@ -130,6 +133,7 @@ function initialiserSynth() {
 
 }
 
+// fonction de p5.js
 function draw() {
 
     if (!ready) {
