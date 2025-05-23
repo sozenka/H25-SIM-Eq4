@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "esbuild": "^0.25.4",
     "serverless-http": "^3.2.0"
   }
 }
