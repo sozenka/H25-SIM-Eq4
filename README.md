@@ -131,14 +131,23 @@ JWT_SECRET=your_secure_jwt_secret_key_here
 
 ### Frontend Environment Variables
 
-Create a `.env` file in the `frontend` directory if you need to configure additional settings:
+Create a `.env` file in the `frontend` directory with the following variables:
 
 ```env
 # API Base URL (optional, defaults to localhost:5000)
 VITE_API_URL=http://localhost:5000
+
+# Supabase Configuration (required for audio storage and file management)
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-**Note**: The frontend uses Supabase for some services. The configuration is in `frontend/supabaseClient.ts`.
+**Supabase Setup**: The frontend uses Supabase for audio file storage and management. To set up:
+1. Create a free account at [Supabase](https://supabase.com)
+2. Create a new project
+3. Copy your project URL and anon key from the project settings
+4. Create a storage bucket named `audio-recordings` for storing audio files
+5. Configure the bucket's storage policies as needed for your use case
 
 ## 🎯 Usage
 
